@@ -2,7 +2,7 @@ import { html } from 'lit';
 import type { Model } from '../model/index';
 import type { GlasshouseCard } from '../glasshouse-card';
 import { icon } from '../icons';
-import { choreList, laundryCard, rollCallButton } from './home';
+import { choreList, laundryCard, rollCallButton, vacuumRows } from './home';
 
 const CIRC = 163.4;
 
@@ -27,11 +27,7 @@ export function familyView(m: Model, card: GlasshouseCard) {
       ${f.laundry_card ? laundryCard(m, card, true) : ''}
       ${m.vacuums.length || m.printer.low ? html`<div class="glass col" style="flex:1;min-height:0;gap:8px">
         ${m.vacuums.length ? html`<span style="font-size:18px;font-weight:600;padding-left:4px">Robot vacuums</span>` : ''}
-        ${m.vacuums.map((v) => html`<div class="tile t-${v.tone}" style="height:64px;border-radius:22px;padding:0 6px 0 12px;align-items:center;gap:12px">
-          ${icon('bot', 22, 'color:var(--ic)')}
-          <div class="col grow" style="line-height:1.25"><span style="font-size:15px;font-weight:600">${v.name}</span><span class="ellip st" style="font-size:12px">${v.text}</span></div>
-          ${v.state === 'offline' ? '' : html`<div class="btn" data-test="vac-${v.entity}" style="height:48px;padding:0 14px;font-size:13px;gap:6px" @click=${() => card.callSvc('vacuum', v.action.service, {}, { entity_id: v.entity })}>${icon(v.action.icon, 16)}${v.action.label}</div>`}
-        </div>`)}
+        ${vacuumRows(m, card)}
         <div class="grow"></div>
         ${m.printer.low ? html`<div class="row" style="height:44px;border-radius:22px;padding:0 14px;gap:8px;font-size:13px;background:linear-gradient(160deg,rgba(255,176,60,.3),rgba(255,176,60,.1));border:1px solid rgba(255,200,120,.4);color:#FFE6C2">${icon('printer', 16)}${m.printer.low}</div>` : ''}
       </div>` : ''}

@@ -1,11 +1,11 @@
-import { html } from 'lit';
+import { html, type TemplateResult } from 'lit';
 import { icon } from '../icons';
 import type { Model, Tab } from '../model/index';
 import { fmtClock } from './shared';
 
 const NAV: Record<Tab, [string, string]> = { home: ['house', 'Home'], security: ['shield', 'Security'], rooms: ['lamp', 'Rooms'], climate: ['thermometer', 'Climate'], garage: ['car-front', 'Garage'], family: ['users', 'Family'] };
 
-export function header(m: Model, connected: boolean, onAlerts: () => void) {
+export function header(m: Model, connected: boolean, onAlerts: () => void, afterWeather: TemplateResult | '' = '') {
   const w = m.weather, c = m.capsule;
   return html`<div class="header">
     <div class="row" style="gap:14px;padding-left:6px">
@@ -19,6 +19,7 @@ export function header(m: Model, connected: boolean, onAlerts: () => void) {
       <span style="font-size:26px;font-weight:500;letter-spacing:-.02em">${w.temp ?? '—'}°</span>
       <div class="col" style="font-size:12px;line-height:1.3;color:var(--muted)"><span style="color:#fff">${w.cond}</span>
         ${w.hi != null ? html`<span>H ${w.hi}° · L ${w.lo ?? '—'}°</span>` : ''}</div></div>` : ''}
+    ${afterWeather}
     ${connected ? '' : html`<div class="offline-chip">${icon('wifi-off', 16)}Reconnecting…</div>`}
     <div class="grow"></div>
     <div class="capsule alert-cap ${c.kind}" @click=${onAlerts}>

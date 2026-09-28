@@ -15,7 +15,7 @@ import { glass } from './styles/glass';
 import { ensureFont } from './fonts';
 import { icon } from './icons';
 import { header, rail } from './views/chrome';
-import { homeView } from './views/home';
+import { homeView, thermostatCapsule } from './views/home';
 import { securityView } from './views/security';
 import { roomsView } from './views/rooms';
 import { climateView } from './views/climate';
@@ -359,7 +359,7 @@ export class GlasshouseCard extends LitElement {
       <div class="wallpaper wp-${this._config.wallpaper || 'dusk'}"></div>
       ${m.night ? html`<div style="display:contents">${nightView(m, this)}</div>
         <div style="display:contents">${this._overlay?.kind === 'doorbell' ? overlayView(this._overlay, m, this) : ''}</div>` : html`
-        <div class="chrome">${header(m, this._hass!.connected, () => this.openOverlay({ kind: 'alerts' }))}${rail(m.tabs, tab, (t) => this.nav(t))}${V(m, this)}</div>
+        <div class="chrome">${header(m, this._hass!.connected, () => this.openOverlay({ kind: 'alerts' }), thermostatCapsule(m, this))}${rail(m.tabs, tab, (t) => this.nav(t))}${V(m, this)}</div>
         <div style="display:contents">${this._overlay ? overlayView(this._overlay, m, this) : ''}</div>`}
       ${this._toast ? html`<div class="capsule toast">${icon('check', 16, 'color:#98E6CA')}${this._toast}</div>` : ''}
     </div>`;

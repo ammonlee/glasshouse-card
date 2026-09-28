@@ -2,12 +2,38 @@ import { html } from 'lit';
 import type { Model } from '../model/index';
 import type { GlasshouseCard } from '../glasshouse-card';
 import { icon } from '../icons';
-import { seg, missingNote } from './shared';
+import { missingNote } from './shared';
 import { camera } from './camera';
 import { setpointCall } from '../model/climate';
 import { minsSince, attr, val } from '../model/util';
 
 /** The megaphone / "Roll call" button: runs the configured roll-call script; nothing when none is set. */
+/** Robot vacuum rows, shared by the Home card (compact) and the Family tab. */
+export function vacuumRows(m: Model, card: GlasshouseCard, compact = false) {
+  return html`<div style="display:contents">${m.vacuums.map((v) => html`<div class="tile t-${v.tone}" style="height:${compact ? 48 : 64}px;border-radius:${compact ? 18 : 22}px;padding:0 ${compact ? 4 : 6}px 0 ${compact ? 10 : 12}px;align-items:center;gap:${compact ? 10 : 12}px">
+    ${icon('bot', compact ? 18 : 22, 'color:var(--ic)')}
+    <div class="col grow" style="line-height:1.25"><span class="ellip" style="font-size:${compact ? 14 : 15}px;font-weight:600">${v.name}</span><span class="ellip st" style="font-size:12px">${v.text}</span></div>
+    ${v.state === 'offline' ? '' : html`<div class="btn" data-test="vac-${v.entity}" style="height:${compact ? 40 : 48}px;padding:0 ${compact ? 12 : 14}px;font-size:13px;gap:6px" @click=${() => card.callSvc('vacuum', v.action.service, {}, { entity_id: v.entity })}>${icon(v.action.icon, 16)}${v.action.label}</div>`}
+  </div>`)}</div>`;
+}
+
+/** Compact thermostat for the header, next to the weather: temperature (tap for the Climate tab), what it's
+ *  doing, and − / + for the setpoint. */
+export function thermostatCapsule(m: Model, card: GlasshouseCard) {
+  const t = m.thermostat;
+  if (!t) return '';
+  const sp = (delta: number) => { const call = setpointCall(t, delta); if (call) card.callSvc('climate', 'set_temperature', call.data, { entity_id: t.entity }); };
+  return html`<div class="capsule" data-test="thermo-cap" style="padding:0 8px 0 14px;gap:10px">
+    <div class="row" data-test="thermo-open" style="gap:10px;cursor:pointer" @click=${() => card.nav('climate')}>
+      ${icon('thermometer', 22, `color:${t.actionColor || 'rgba(255,255,255,.8)'}`)}
+      <span class="num" style="font-size:26px;font-weight:500;letter-spacing:-.02em">${t.current ?? '—'}°</span>
+      <div class="col" style="font-size:12px;line-height:1.3;color:var(--muted)"><span style=${t.actionColor ? `color:${t.actionColor}` : 'color:#fff'}>${t.actionLabel}</span><span class="num">Set ${t.target ?? '—'}°</span></div>
+    </div>
+    <div class="btn" data-test="sp-down" style="width:40px;height:40px" @click=${() => sp(-1)}>${icon('minus', 18)}</div>
+    <div class="btn" data-test="sp-up" style="width:40px;height:40px" @click=${() => sp(1)}>${icon('plus', 18)}</div>
+  </div>`;
+}
+
 export function rollCallButton(card: GlasshouseCard, withLabel: boolean) {
   const id = card._config.home?.chores?.roll_call;
   if (!id) return '';
@@ -65,7 +91,7 @@ export function laundryCard(m: Model, card: GlasshouseCard, full: boolean) {
 }
 
 export function homeView(m: Model, card: GlasshouseCard) {
-  const c = card._config.home || {}, h = card.view, d = c.doorbell, t = m.thermostat;
+  const c = card._config.home || {}, h = card.view, d = c.doorbell;
   const lockId = d?.lock, locked = val(h, lockId) === 'locked', lockHold = !!lockId && card.needsHold(lockId);
   const lastRing = d?.event && Date.parse(val(h, d.event) || '') ? minsSince(val(h, d.event)!, +m.now) : null;
   const media = c.media, ms = val(h, media), mediaOn = !!ms && !['off', 'standby', 'unavailable'].includes(ms);
@@ -76,7 +102,6 @@ export function homeView(m: Model, card: GlasshouseCard) {
     : html`<div class="row" style="min-height:54px;border-radius:18px;padding:6px 12px;gap:10px;background:rgba(255,255,255,.07)">
         <span data-test="event-dot" style="width:8px;height:8px;flex:none;border-radius:4px;background:${e.color};box-shadow:0 0 10px ${e.color}"></span>
         <div class="col" style="min-width:0;line-height:1.3"><span class="num" style="font-size:12px;color:rgba(255,255,255,.66)">${e.time}</span><span class="ellip" style="font-size:14px;font-weight:600">${e.title}</span></div></div>`));
-  const sp = (delta: number) => { const call = t && setpointCall(t, delta); if (call) card.callSvc('climate', 'set_temperature', call.data, { entity_id: t!.entity }); };
 
   return html`<div class="view col" style="gap:16px">
     <div class="row" style="height:420px;flex:none;gap:16px;align-items:stretch">
@@ -106,18 +131,9 @@ export function homeView(m: Model, card: GlasshouseCard) {
         ${upNext}</div>` : ''}
     </div>
     <div class="row" style="flex:1;min-height:0;gap:16px;align-items:stretch">
-      ${t ? html`<div class="glass col" style="width:280px;flex:none;justify-content:space-between">
-        <div class="row" style="justify-content:space-between;padding:0 4px;font-size:13px;color:var(--muted)">
-          <span>${(attr<string>(h, t.entity, 'friendly_name') || 'Thermostat').replace(/ Thermostat$/, '')} · <span style=${t.actionColor ? `color:${t.actionColor};font-weight:500` : ''}>${t.actionLabel}</span></span>
-          ${t.humidity != null ? html`<span class="row" style="gap:5px">${icon('droplets', 14)}${t.humidity}%</span>` : ''}</div>
-        <div class="row" style="gap:6px;padding-left:4px">
-          <span class="grow num" style="font-size:64px;font-weight:200;letter-spacing:-.05em;line-height:.9">${t.current ?? '—'}°</span>
-          <div class="btn circle" data-test="sp-down" @click=${() => sp(-1)}>${icon('minus', 20)}</div>
-          <span class="num" style="width:40px;text-align:center;font-size:18px;font-weight:600">${t.target ?? '—'}°</span>
-          <div class="btn circle" data-test="sp-up" @click=${() => sp(1)}>${icon('plus', 20)}</div>
-        </div>
-        ${seg([['home', 'Home'], ['away', 'Away'], ['sleep', 'Sleep']], t.preset, (p) => card.callSvc('climate', 'set_preset_mode', { preset_mode: p }, { entity_id: t.entity }))}
-      </div>` : ''}
+      ${m.vacuums.length ? html`<div class="glass col" data-test="vacuum-card" style="width:280px;flex:none;gap:8px">
+        <div class="row" style="height:32px;padding-left:4px;justify-content:space-between"><span class="card-title">Vacuums</span>${icon('bot', 18, 'color:rgba(255,255,255,.7)')}</div>
+        ${vacuumRows(m, card, true)}</div>` : ''}
       ${laundryCard(m, card, false)}
       ${media ? html`<div class="glass col grow" style="justify-content:space-between;${mediaOn ? '' : 'opacity:.6'}">
         <div class="row" style="gap:12px">
