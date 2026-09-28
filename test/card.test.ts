@@ -175,6 +175,65 @@ describe('<glasshouse-card>', () => {
     document.body.removeChild(el);
   });
 
+  it('seeds each session exactly once when a sync is still in flight as the clock crosses noon', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });   // only the clock; real timers keep the sync loop running
+    try {
+      vi.setSystemTime(new Date(2026, 8, 28, 11, 59, 59));
+      const due = '2026-09-28';
+      let todoCb: (m: any) => void = () => {};
+      let items: any[] = [];
+      const adds: string[] = [], addedAt: number[] = [], removed: string[] = [];
+      let release!: () => void;
+      const gate = new Promise<void>((r) => { release = r; });
+      const conn = { subscribeMessage: async (cb: any, msg: any) => { if (msg.type === 'todo/item/subscribe') todoCb = cb; return () => {}; } };
+      const keys = ['unload', 'load', 'garbage'];
+      const at = new Date().toISOString();
+      const base = miniHouse();
+      const h: any = {
+        ...base, connection: conn,
+        states: { ...base.states, 'sensor.roster': { entity_id: 'sensor.roster', state: 'ok', attributes: { assignments: { unload: 'June', load: 'Beth', garbage: 'Ben' }, morning_keys: keys, evening_keys: keys }, last_changed: at, last_updated: at } },
+        callService: async (d: string, s: string, data: any) => {
+          if (d !== 'todo') return;
+          if (s === 'remove_item') { removed.push(...data.item); items = items.filter((i) => !data.item.includes(i.uid)); }
+          if (s === 'add_item') {
+            adds.push(data.item); addedAt.push(new Date().getHours());
+            items = [...items, { uid: `u${items.length}`, summary: data.item, status: 'needs_action', due: data.due_date }];
+          }
+          todoCb({ items });                    // push lands before the call result
+          await gate;                           // the first call only resolves after the session flip
+        },
+      };
+      const el = document.createElement('glasshouse-card') as any;
+      el.setConfig({ type: 'custom:glasshouse-card', home: { chores: { todo: 'todo.chores', roster: 'sensor.roster' } } });
+      el.hass = h;
+      document.body.appendChild(el);
+      await el.updateComplete;
+      await Promise.resolve(); await Promise.resolve();
+      todoCb({ items: [] });                    // 11:59:59 -> morning plan starts, first add_item hangs
+      for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0));
+      expect(adds).toEqual(['June · Unload dishes · Morning']);
+      vi.setSystemTime(new Date(2026, 8, 28, 12, 0, 1));
+      release();
+      for (let i = 0; i < 20; i++) await new Promise((r) => setTimeout(r, 0));
+      todoCb({ items });                        // updated list push
+      el.hass = { ...h };
+      el.hass = { ...h };
+      for (let i = 0; i < 10; i++) await new Promise((r) => setTimeout(r, 0));
+      const morning = ['June · Unload dishes · Morning', 'Beth · Load dishes · Morning', 'Ben · Garbage out · Morning'];
+      const evening = morning.map((m) => m.replace('Morning', 'Evening'));
+      for (const m of [...morning, ...evening]) expect(adds.filter((a) => a === m)).toHaveLength(1);
+      expect(new Set(adds).size).toBe(adds.length);
+      expect(adds.length).toBe(6);
+      for (const e of evening) expect(addedAt[adds.indexOf(e)]).toBe(12);   // evening items only after the flip
+      expect(removed).toEqual([]);
+      expect(items.filter((i) => morning.includes(i.summary))).toHaveLength(3);
+      expect(items.every((i) => i.due === due)).toBe(true);
+      document.body.removeChild(el);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('does not seed from a roster that has not updated today (Minor g)', async () => {
     const adds: string[] = [];
     let todoCb: (m: any) => void = () => {};

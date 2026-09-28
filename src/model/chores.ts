@@ -3,7 +3,9 @@ import { attr } from './util';
 import { type PersonVm, matchPerson, COLORS } from './people';
 
 export interface TodoItem { uid: string; summary: string; status: 'needs_action' | 'completed'; due?: string }
-/** `legacy` is the summary v0.1.0 seeded for this chore, when it differs from `summary`. */
+/** `legacy` is the summary v0.1.0 seeded for this chore, when it differs from `summary`. It differs not only
+ *  when the label wording changed (garbage, counters) but also because of the session suffix: a twice-a-day
+ *  chore such as `Dante · Unload dishes` has an unchanged label yet is now seeded as `… · Morning|Evening`. */
 export interface ChoreSpec { key: string; who: string; label: string; icon: string; summary: string; legacy?: string }
 export interface SyncPlan { remove: string[]; add: string[] }
 export interface ChoreRow { key: string; initials: string; who: string; what: string; icon: string; color: string; done: boolean; uid?: string; summary?: string;
