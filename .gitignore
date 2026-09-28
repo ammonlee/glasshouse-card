@@ -1,0 +1,9 @@
+.superpowers/
+node_modules/
+demo/build/
+demo/house.json
+dist/*.map
+dist/
+local/
+docs/superpowers/
+.DS_Store

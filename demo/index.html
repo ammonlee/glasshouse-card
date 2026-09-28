@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glasshouse demo</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0B0B0D; color: #eee; font: 13px system-ui; }
+  #stage { position: fixed; inset: 0 0 48px 0; }
+  #stage glasshouse-card { width: 100%; height: 100%; }
+  #bar { position: fixed; left: 0; right: 0; bottom: 0; height: 48px; display: flex; gap: 8px; align-items: center; padding: 0 12px; background: #111; }
+  #bar button, #bar select { background: #222; color: #eee; border: 1px solid #333; border-radius: 6px; height: 30px; padding: 0 10px; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="bar">
+  <select id="wp"><option>dusk</option><option>aurora</option><option>ember</option></select>
+  <button id="ring">Ring doorbell</button>
+  <button id="night">Toggle night</button>
+  <button id="conn">Toggle connection</button>
+</div>
+<script type="module" src="./build/fake-hass.js"></script>
+<script type="module">
+  const d = () => window.__demo;
+  const bump = (id, state) => { const h = d().hass; h.states = { ...h.states, [id]: { ...(h.states[id] || { entity_id: id, attributes: {} }), state, last_changed: new Date().toISOString(), last_updated: new Date().toISOString() } }; d().push(); };
+  document.getElementById('wp').onchange = (e) => { const el = d().el; el.setConfig({ ...el._config, wallpaper: e.target.value }); };
+  document.getElementById('ring').onclick = () => { const id = d().el._config.home?.doorbell?.event; if (id) bump(id, new Date().toISOString()); else d().el.ring(); };
+  document.getElementById('night').onclick = () => { const id = d().el._config.night_mode || 'input_boolean.glasshouse_night'; d().el.setConfig({ ...d().el._config, night_mode: id }); bump(id, d().hass.states[id]?.state === 'on' ? 'off' : 'on'); };
+  document.getElementById('conn').onclick = () => { d().hass.connected = !d().hass.connected; d().push(); };
+</script>
+</body>
+</html>
