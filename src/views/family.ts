@@ -17,7 +17,7 @@ export function familyView(m: Model, card: GlasshouseCard) {
         <div class="grow" style="display:grid;grid-template-columns:repeat(3,1fr);align-items:center">${m.brushing.map((b) => html`<div class="col" style="align-items:center;gap:4px">
           <div style="position:relative;width:64px;height:64px"><svg width="64" height="64" viewBox="0 0 64 64">
             <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="6"></circle>
-            <circle cx="32" cy="32" r="26" fill="none" stroke-width="6" stroke-linecap="round" transform="rotate(-90 32 32)" stroke=${b.done ? '#62D7AC' : '#FFD660'} stroke-dasharray="${((b.pct / 100) * CIRC).toFixed(1)} ${CIRC}"></circle>
+            <circle data-test="brush-progress" cx="32" cy="32" r="26" fill="none" stroke-width="6" stroke-linecap="round" transform="rotate(-90 32 32)" stroke-opacity=${b.seconds > 0 ? 1 : 0} stroke=${b.done ? '#62D7AC' : '#FFD660'} stroke-dasharray="${((b.pct / 100) * CIRC).toFixed(1)} ${CIRC}"></circle>
           </svg>
             <span class="num" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600">${b.time}</span></div>
           <span style="font-size:12px;color:rgba(255,255,255,.8)">${b.name}</span></div>`)}</div>
