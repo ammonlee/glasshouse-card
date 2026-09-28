@@ -19,7 +19,7 @@ export interface GlasshouseConfig {
   alerts?: { safety?: Array<string | AlertRule>; nudge?: Array<string | AlertRule>; secure_label?: string };
   home?: {
     doorbell?: { camera?: string; package_camera?: string; event?: string; lock?: string; takeover_seconds?: number };
-    chores?: { todo?: string; roster?: string };
+    chores?: { todo?: string; roster?: string; roll_call?: string };
     calendar?: string | string[];
     thermostat?: string;
     media?: string;

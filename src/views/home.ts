@@ -7,6 +7,16 @@ import { camera } from './camera';
 import { setpointCall } from '../model/climate';
 import { minsSince, attr, val } from '../model/util';
 
+/** The megaphone / "Roll call" button: runs the configured roll-call script; nothing when none is set. */
+export function rollCallButton(card: GlasshouseCard, withLabel: boolean) {
+  const id = card._config.home?.chores?.roll_call;
+  if (!id) return '';
+  const run = async () => { if (await card.callSvc('script', 'turn_on', {}, { entity_id: id })) card.showToast('Roll call started'); };
+  return withLabel
+    ? html`<div class="btn" data-test="roll-call" style="height:48px;padding:0 16px;font-size:14px" @click=${run}>${icon('megaphone', 16)}Roll call</div>`
+    : html`<div class="btn circle" data-test="roll-call" title="Roll call" @click=${run}>${icon('megaphone')}</div>`;
+}
+
 export function choreList(m: Model, card: GlasshouseCard, rowH: number | null, trailing: unknown) {
   const done = m.chores.filter((c) => c.done).length, all = m.chores.length > 0 && done === m.chores.length;
   return html`
@@ -90,7 +100,7 @@ export function homeView(m: Model, card: GlasshouseCard) {
         ${missingNote(m.missing, [d.camera, d.lock, d.event])}
       </div>` : ''}
       ${c.chores ? html`<div class="glass col grow" style="gap:10px">${choreList(m, card, null,
-          html`<div class="btn circle">${icon('megaphone')}</div>`)}</div>` : ''}
+          rollCallButton(card, false))}</div>` : ''}
       ${c.calendar ? html`<div class="glass col" style="width:255px;flex:none;overflow:hidden;gap:6px">
         <div class="row" style="height:48px;justify-content:space-between;padding-left:4px"><span class="card-title">Up next</span>${icon('calendar-days', 18, 'color:rgba(255,255,255,.7)')}</div>
         ${upNext}</div>` : ''}

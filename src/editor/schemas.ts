@@ -12,7 +12,7 @@ export const SCHEMAS = {
   ],
   home: [
     { name: 'doorbell', label: 'Doorbell', type: 'expandable', schema: [ent('camera', 'Camera', 'camera'), ent('package_camera', 'Package camera', 'camera'), ent('event', 'Doorbell event', 'event'), ent('lock', 'Front door lock', 'lock'), { name: 'takeover_seconds', label: 'Takeover seconds', selector: { number: { min: 10, max: 180, mode: 'box' } } }] },
-    { name: 'chores', label: 'Chores', type: 'expandable', schema: [ent('todo', 'Chores to-do list', 'todo'), ent('roster', 'Roster sensor (optional)', 'sensor')] },
+    { name: 'chores', label: 'Chores', type: 'expandable', schema: [ent('todo', 'Chores to-do list', 'todo'), ent('roster', 'Roster sensor (optional)', 'sensor'), ent('roll_call', 'Roll call script (optional)', 'script')] },
     ents('calendar', 'Up next calendars', 'calendar'),
     ent('thermostat', 'Thermostat', 'climate'),
     ent('media', 'Media player', 'media_player'),

@@ -2,7 +2,7 @@ import { html } from 'lit';
 import type { Model } from '../model/index';
 import type { GlasshouseCard } from '../glasshouse-card';
 import { icon } from '../icons';
-import { choreList, laundryCard } from './home';
+import { choreList, laundryCard, rollCallButton } from './home';
 
 const CIRC = 163.4;
 
@@ -11,7 +11,7 @@ export function familyView(m: Model, card: GlasshouseCard) {
   const hasChores = !!card._config.home?.chores;
   return html`<div class="view" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px">
     <div class="col" style="min-height:0;gap:16px">
-      ${hasChores ? html`<div class="glass col" style="gap:10px">${choreList(m, card, 66, html`<div class="btn" style="height:48px;padding:0 16px;font-size:14px">${icon('megaphone', 16)}Roll call</div>`)}</div>` : ''}
+      ${hasChores ? html`<div class="glass col" style="gap:10px">${choreList(m, card, 66, rollCallButton(card, true))}</div>` : ''}
       ${m.brushing.length ? html`<div class="glass col" style="flex:1;min-height:0;gap:6px">
         <div class="row" style="justify-content:space-between;padding-left:4px"><span style="font-size:18px;font-weight:600">Brushing tonight</span><span style="font-size:12px;color:var(--subtle)">2-minute goal</span></div>
         <div class="grow" style="display:grid;grid-template-columns:repeat(3,1fr);align-items:center">${m.brushing.map((b) => html`<div class="col" style="align-items:center;gap:4px">

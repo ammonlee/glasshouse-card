@@ -38,7 +38,7 @@ alerts:
   nudge:  [lock.back_door, { entity: sensor.co2, above: 1200, label: Air quality poor, icon: wind }]
 home:
   doorbell: { camera: camera.doorbell, event: event.doorbell, lock: lock.front_door }
-  chores: { todo: todo.chores, roster: sensor.chore_roster_today }
+  chores: { todo: todo.chores, roster: sensor.chore_roster_today, roll_call: script.chore_roll_call }
   calendar: calendar.family
   thermostat: climate.main_floor
   media: media_player.living_room
