@@ -2,7 +2,7 @@ import type { HassLike } from '../types';
 import type { PersonCfg } from '../config/types';
 import { val, fname } from './util';
 
-export const COLORS: Record<string, string> = { blue: '#A7C7E5', gold: '#FFD660', grey: '#C9CDD3', green: '#98E6CA' };
+export const COLORS: Record<string, string> = { blue: '#A7C7E5', gold: '#FFD660', grey: '#C9CDD3', green: '#98E6CA', orange: '#E58A4E', purple: '#B07CC6' };
 export const colorOf = (c?: string) => (c ? COLORS[c] || (c.startsWith('#') ? c : COLORS.grey) : COLORS.grey);
 
 export interface PersonVm { name: string; initials: string; color: string; home: boolean; inRoom: boolean }

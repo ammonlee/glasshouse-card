@@ -1,5 +1,6 @@
 import { makeHass } from '../helpers/hass';
-import { people, matchPerson, colorOf } from '../../src/model/people';
+import { people, matchPerson, colorOf, COLORS } from '../../src/model/people';
+import { SCHEMAS } from '../../src/editor/schemas';
 import { weather } from '../../src/model/weather';
 import { upNext, timeline, fmtTime } from '../../src/model/calendar';
 
@@ -20,6 +21,15 @@ describe('people', () => {
     expect(matchPerson(p, 'Zed')).toBeUndefined();
   });
   it('passes hex colours through', () => { expect(colorOf('#123456')).toBe('#123456'); });
+  it('has the kids\' chart colours, keeping the existing names', () => {
+    expect(COLORS).toMatchObject({ orange: '#E58A4E', purple: '#B07CC6', blue: '#A7C7E5', gold: '#FFD660', grey: '#C9CDD3', green: '#98E6CA' });
+    expect(colorOf('orange')).toBe('#E58A4E');
+    expect(colorOf('purple')).toBe('#B07CC6');
+  });
+  it('offers orange and purple in the editor person colour select', () => {
+    const f = (SCHEMAS as any).person.find((x: any) => x.name === 'color');
+    expect(f.selector.select.options).toEqual(['blue', 'gold', 'grey', 'green', 'orange', 'purple']);
+  });
 });
 
 describe('weather', () => {
