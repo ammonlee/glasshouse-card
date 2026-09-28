@@ -17,7 +17,7 @@ export function choreList(m: Model, card: GlasshouseCard, rowH: number | null, t
     </div>
     <div style="display:contents">${m.chores.map((c) => html`
       <div class="chore-row ${c.done ? 'done' : ''}" style="${rowH ? `height:${rowH}px;` : 'flex:1;min-height:0;'}padding:0 6px 0 8px"
-        @click=${() => card.toggleChore(c.uid, `${c.who} · ${c.what}`, c.done)}>
+        @click=${() => card.toggleChore(c.uid, c.summary ?? `${c.who} · ${c.what}`, c.done)}>
         <div class="initials" style="box-shadow:inset 0 0 0 2px ${c.color}">${c.initials}</div>
         <div class="col grow" style="line-height:1.3"><span style="font-size:16px;font-weight:600">${c.who}</span>
           <span class="row" style="font-size:13px;gap:5px;color:${c.done ? '#BFF0DD' : 'rgba(255,255,255,.72)'}">${icon(c.icon, 14)}<span class="ellip">${c.what}</span></span></div>

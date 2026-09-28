@@ -15,7 +15,19 @@ const ppl: PersonVm[] = [
 describe('rosterChores', () => {
   it('uses evening keys after noon and skips blanks', () => {
     const s = rosterChores(roster, 'sensor.roster', new Date('2026-09-27T18:00:00'))!;
-    expect(s.map((c) => c.summary)).toEqual(['Dante · Unload dishes', 'Beth · Load dishes', 'June · Garbage out', 'Ben · Counters & appliances']);
+    expect(s.map((c) => c.summary)).toEqual(['Dante · Unload dishes · Evening', 'Beth · Load dishes · Evening', 'June · Garbage out · Evening', 'Ben · Counters & appliances']);
+  });
+  it('suffixes twice-a-day chores with the morning session before noon', () => {
+    expect(rosterChores(roster, 'sensor.roster', new Date('2026-09-27T11:59:00'))!.map((c) => c.summary))
+      .toEqual(['Dante · Unload dishes · Morning', 'Beth · Load dishes · Morning', 'June · Garbage out · Morning']);
+  });
+  it('switches to the evening session at 12:00', () => {
+    expect(rosterChores(roster, 'sensor.roster', new Date('2026-09-27T12:00:00'))![0].summary).toBe('Dante · Unload dishes · Evening');
+  });
+  it('does not suffix a chore that is only in one session', () => {
+    const h = makeHass([{ entity_id: 'sensor.r', state: 'x', attributes: { assignments: { unload: 'Dante', counters: 'Ben' }, morning_keys: ['unload'], evening_keys: ['counters'] } }]);
+    expect(rosterChores(h, 'sensor.r', new Date('2026-09-27T08:00:00'))!.map((c) => c.summary)).toEqual(['Dante · Unload dishes']);
+    expect(rosterChores(h, 'sensor.r', new Date('2026-09-27T18:00:00'))!.map((c) => c.summary)).toEqual(['Ben · Counters & appliances']);
   });
   it('uses morning keys before noon', () => {
     expect(rosterChores(roster, 'sensor.roster', new Date('2026-09-27T08:00:00'))!.map((c) => c.key)).toEqual(['unload', 'load', 'garbage']);
@@ -31,13 +43,19 @@ describe('chart labels', () => {
     for (const l of ['Take out trash', 'Clean appliances & countertops', 'Garbage out', 'Counters & appliances', 'Unload dishes']) expect(isSeeded(`June · ${l}`)).toBe(true);
     expect(isSeeded('June · Feed the cat')).toBe(false);
   });
+  it('recognizes session-suffixed summaries as seeded, but not arbitrary suffixed items', () => {
+    expect(isSeeded('June · Garbage out · Morning')).toBe(true);
+    expect(isSeeded('June · Unload dishes · Evening')).toBe(true);
+    expect(isSeeded('June · Feed the cat · Morning')).toBe(false);
+    expect(isSeeded('June · Morning')).toBe(false);
+  });
 });
 
 describe('planSync', () => {
   const specs = rosterChores(roster, 'sensor.roster', new Date('2026-09-27T18:00:00'))!;
-  const done = { uid: '1', summary: 'Dante · Unload dishes', status: 'completed' as const, due: '2026-09-27' };
+  const done = { uid: '1', summary: 'Dante · Unload dishes · Evening', status: 'completed' as const, due: '2026-09-27' };
   it('adds only today\'s missing summaries', () => {
-    expect(planSync(specs, [done], '2026-09-27')).toEqual({ remove: [], add: ['Beth · Load dishes', 'June · Garbage out', 'Ben · Counters & appliances'] });
+    expect(planSync(specs, [done], '2026-09-27')).toEqual({ remove: [], add: ['Beth · Load dishes · Evening', 'June · Garbage out · Evening', 'Ben · Counters & appliances'] });
   });
   it('removes yesterday\'s items and re-seeds today (Review Focus 3)', () => {
     expect(planSync(specs, [done], '2026-09-28')).toEqual({ remove: ['1'], add: specs.map((s) => s.summary) });
@@ -56,23 +74,39 @@ describe('planSync', () => {
       { uid: '3', summary: 'Renew passport', status: 'needs_action' as const, due: '2026-09-01' },   // user's own overdue item -> keep
       { uid: '4', summary: 'June · Feed the cat', status: 'needs_action' as const, due: '2026-09-20' }, // not a roster label -> keep
       { uid: '5', summary: 'Beth · Laundry', status: 'completed' as const, due: '2026-09-26' },         // seeded label -> remove
+      { uid: '6', summary: 'June · Take out trash', status: 'completed' as const, due: '2026-09-26' },  // v0.1.0 label -> remove
+      { uid: '7', summary: 'June · Garbage out · Morning', status: 'completed' as const, due: '2026-09-27' }, // suffixed -> remove
     ];
-    expect(planSync(specs, items, '2026-09-28').remove).toEqual(['1', '5']);
+    expect(planSync(specs, items, '2026-09-28').remove).toEqual(['1', '5', '6', '7']);
   });
   it('removes same-day duplicates of a seeded chore, keeping one (completed first, then lowest uid)', () => {
     const d = (uid: string, summary: string, status: 'completed' | 'needs_action' = 'needs_action') => ({ uid, summary, status, due: '2026-09-27' });
-    const items = [d('b', 'Beth · Load dishes'), d('a', 'Beth · Load dishes'), d('z', 'Dante · Unload dishes'), d('y', 'Dante · Unload dishes', 'completed'), d('c', 'June · Garbage out')];
+    const items = [d('b', 'Beth · Load dishes · Evening'), d('a', 'Beth · Load dishes · Evening'), d('z', 'Dante · Unload dishes · Evening'), d('y', 'Dante · Unload dishes · Evening', 'completed'), d('c', 'June · Garbage out · Evening')];
     expect(planSync(specs, items, '2026-09-27')).toEqual({ remove: ['b', 'z'], add: ['Ben · Counters & appliances'] });
+  });
+  it('replaces today\'s v0.1.0 items with the session items instead of duplicating them', () => {
+    const d = (uid: string, summary: string) => ({ uid, summary, status: 'completed' as const, due: '2026-09-27' });
+    const items = [d('l1', 'Dante · Unload dishes'), d('l2', 'June · Take out trash'), d('l3', 'Ben · Clean appliances & countertops'), d('n', 'Beth · Load dishes · Evening')];
+    expect(planSync(specs, items, '2026-09-27')).toEqual({ remove: ['l1', 'l2', 'l3'], add: ['Dante · Unload dishes · Evening', 'June · Garbage out · Evening', 'Ben · Counters & appliances'] });
+  });
+  it('keeps the morning items when the evening session starts', () => {
+    const morning = rosterChores(roster, 'sensor.roster', new Date('2026-09-27T08:00:00'))!;
+    const items = morning.map((c, i) => ({ uid: `m${i}`, summary: c.summary, status: 'completed' as const, due: '2026-09-27' }));
+    expect(planSync(specs, items, '2026-09-27')).toEqual({ remove: [], add: specs.map((s) => s.summary) });
   });
 });
 
 describe('choreRows', () => {
   const specs = rosterChores(roster, 'sensor.roster', new Date('2026-09-27T18:00:00'))!;
   it('joins specs to items and people (prefix match, unknown person) (Review Focus 2)', () => {
-    const rows = choreRows(specs, [{ uid: '1', summary: 'Dante · Unload dishes', status: 'completed', due: '2026-09-27' }, { uid: '0', summary: 'Beth · Load dishes', status: 'completed', due: '2026-09-26' }], ppl, '2026-09-27');
+    const rows = choreRows(specs, [{ uid: '1', summary: 'Dante · Unload dishes · Evening', status: 'completed', due: '2026-09-27' }, { uid: '0', summary: 'Beth · Load dishes · Evening', status: 'completed', due: '2026-09-26' }], ppl, '2026-09-27');
     expect(rows[0]).toMatchObject({ who: 'Dante', initials: 'DA', color: '#C9CDD3', done: true, uid: '1', icon: 'utensils' });
     expect(rows[1]).toMatchObject({ who: 'Beth', done: false, uid: undefined });
     expect(rows[3]).toMatchObject({ who: 'Bennett', initials: 'BN', done: false, uid: undefined });
+  });
+  it('a completed morning item does not show the evening item as done', () => {
+    const rows = choreRows(specs, [{ uid: 'm', summary: 'Dante · Unload dishes · Morning', status: 'completed', due: '2026-09-27' }], ppl, '2026-09-27');
+    expect(rows[0]).toMatchObject({ key: 'unload', what: 'Unload dishes', done: false, uid: undefined, summary: 'Dante · Unload dishes · Evening' });
   });
   it('falls back to raw to-do items without a roster', () => {
     const rows = choreRows(null, [{ uid: 'a', summary: 'June · Feed the cat', status: 'needs_action' }, { uid: 'b', summary: 'Water plants', status: 'completed' }, { uid: 'c', summary: 'Old', status: 'completed', due: '2026-09-20' }], ppl, '2026-09-27');

@@ -1,5 +1,6 @@
 import '../../src/glasshouse-card';
 import { makeHass } from '../helpers/hass';
+import { session } from '../../src/model/chores';
 
 const h = makeHass([
   { entity_id: 'camera.door', state: 'recording', attributes: { access_token: 'tok', friendly_name: 'Doorbell' } },
@@ -31,6 +32,12 @@ describe('home view', () => {
     expect(r.textContent).toContain('77°');
     expect(r.textContent).toContain('Bluey');
     expect(r.textContent).toContain('Good Night');
+  });
+  it('tapping a chore without a to-do item updates it by its full session summary', async () => {
+    const el = await mount();
+    (el.shadowRoot!.querySelector('.chore-row') as HTMLElement).click();
+    await Promise.resolve();
+    expect(h.calls).toContainEqual(['todo', 'update_item', { item: `Beth · Unload dishes · ${session(new Date())}`, status: 'completed' }, { entity_id: 'todo.chores' }]);
   });
   it('plus button raises the cool setpoint', async () => {
     const el = await mount();

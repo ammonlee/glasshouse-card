@@ -1,5 +1,6 @@
 import '../src/glasshouse-card';
 import { miniHouse } from './helpers/hass';
+import { session } from '../src/model/chores';
 
 async function mount(config: any) {
   const el = document.createElement('glasshouse-card') as any;
@@ -168,7 +169,8 @@ describe('<glasshouse-card>', () => {
     for (let i = 0; i < 10; i++) await new Promise((r) => setTimeout(r, 0));
     el.hass = { ...h };
     for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0));
-    expect(adds).toEqual(['June · Unload dishes', 'Beth · Load dishes', 'Ben · Garbage out']);
+    const ses = session(new Date());   // twice-a-day chores carry the current session
+    expect(adds).toEqual([`June · Unload dishes · ${ses}`, `Beth · Load dishes · ${ses}`, `Ben · Garbage out · ${ses}`]);
     expect(items.length).toBe(3);
     document.body.removeChild(el);
   });
@@ -196,7 +198,7 @@ describe('<glasshouse-card>', () => {
     expect(adds).toEqual([]);
     el.hass = { ...h, states: { ...h.states, 'sensor.roster': roster(new Date().toISOString()) } };
     for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0));
-    expect(adds).toEqual(['June · Unload dishes']);
+    expect(adds).toEqual([`June · Unload dishes · ${session(new Date())}`]);
     document.body.removeChild(el);
   });
 
