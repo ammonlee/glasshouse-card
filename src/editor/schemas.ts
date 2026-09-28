@@ -13,7 +13,6 @@ export const SCHEMAS = {
   home: [
     { name: 'doorbell', label: 'Doorbell', type: 'expandable', schema: [ent('camera', 'Camera', 'camera'), ent('package_camera', 'Package camera', 'camera'), ent('event', 'Doorbell event', 'event'), ent('lock', 'Front door lock', 'lock'), { name: 'takeover_seconds', label: 'Takeover seconds', selector: { number: { min: 10, max: 180, mode: 'box' } } }] },
     { name: 'chores', label: 'Chores', type: 'expandable', schema: [ent('todo', 'Chores to-do list', 'todo'), ent('roster', 'Roster sensor (optional)', 'sensor'), ent('roll_call', 'Roll call script (optional)', 'script')] },
-    ents('calendar', 'Up next calendars', 'calendar'),
     ent('thermostat', 'Thermostat', 'climate'),
     ent('media', 'Media player', 'media_player'),
     { name: 'laundry', label: 'Laundry', type: 'expandable', schema: [ent('washer', 'Washer status', 'sensor'), ent('washer_done', 'Washer finished', 'binary_sensor'), ent('washer_remaining', 'Washer minutes left', 'sensor'), ent('dryer', 'Dryer status', 'sensor'), ent('dryer_done', 'Dryer finished', 'binary_sensor'), ent('dryer_remaining', 'Dryer minutes left', 'sensor'), ent('dryer_total', 'Dryer total minutes', 'sensor'), ent('loads_week', 'Loads this week', 'sensor')] },
@@ -28,5 +27,6 @@ export const SCHEMAS = {
   climateRoom: [text('name', 'Name'), ent('climate', 'Room climate', 'climate'), ents('vents', 'Vents', 'cover'), ent('occupancy', 'Occupancy', 'binary_sensor')],
   car: [text('name', 'Name'), ent('battery', 'Battery %', 'sensor'), ent('range', 'Range', 'sensor'), ent('charger_power', 'Charger power', 'sensor'), ent('lock', 'Doors', 'lock'), ent('climate', 'Climate', 'climate'), ent('sentry', 'Sentry', 'switch'), ent('charge_limit', 'Charge limit', 'number'), ent('inside', 'Inside temperature', 'sensor'), ent('odometer', 'Odometer', 'sensor')],
   camera: [ent('entity', 'Camera', 'camera'), text('name', 'Name')],
+  calendar: [ent('entity', 'Calendar', 'calendar'), { name: 'color', label: 'Dot colour (name or #hex; blank = automatic)', selector: { select: { mode: 'dropdown', custom_value: true, options: ['blue', 'green', 'gold', 'orange', 'purple', 'grey'] } } }],
   alert: [ent('entity', 'Entity'), { name: 'above', label: 'Active above', selector: { number: { mode: 'box' } } }, { name: 'below', label: 'Active below', selector: { number: { mode: 'box' } } }, text('state', 'Active when state is'), text('label', 'Label'), text('icon', 'Icon')],
 };

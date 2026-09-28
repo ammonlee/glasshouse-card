@@ -3,6 +3,7 @@ export type PersonColor = 'blue' | 'gold' | 'grey' | 'green' | string;
 
 export interface AlertRule { entity: string; above?: number; below?: number; state?: string; label?: string; icon?: string }
 export interface PersonCfg { person: string; name?: string; initials?: string; color?: PersonColor; occupancy?: string; toothbrush?: string }
+export interface CalendarCfg { entity: string; color?: string }
 export interface CameraCfg { entity: string; name?: string }
 export interface RoomCfg { area: string; name?: string; icon?: string; floor?: string; include?: string[]; exclude?: string[]; climate?: string; camera?: string; occupancy?: string }
 export interface ClimateRoomCfg { name: string; climate?: string; vents?: string[]; occupancy?: string }
@@ -20,7 +21,7 @@ export interface GlasshouseConfig {
   home?: {
     doorbell?: { camera?: string; package_camera?: string; event?: string; lock?: string; takeover_seconds?: number };
     chores?: { todo?: string; roster?: string; roll_call?: string };
-    calendar?: string | string[];
+    calendar?: string | Array<string | CalendarCfg>;
     thermostat?: string;
     media?: string;
     laundry?: { washer?: string; washer_done?: string; washer_remaining?: string; dryer?: string; dryer_done?: string; dryer_remaining?: string; dryer_total?: string; loads_week?: string };

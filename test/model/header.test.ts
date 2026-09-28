@@ -2,7 +2,8 @@ import { makeHass } from '../helpers/hass';
 import { people, matchPerson, colorOf, COLORS } from '../../src/model/people';
 import { SCHEMAS } from '../../src/editor/schemas';
 import { weather } from '../../src/model/weather';
-import { upNext, timeline, fmtTime } from '../../src/model/calendar';
+import { upNext, timeline, fmtTime, CAL_PALETTE } from '../../src/model/calendar';
+const C0 = CAL_PALETTE[0];
 
 describe('people', () => {
   const h = makeHass([
@@ -50,13 +51,13 @@ describe('calendar', () => {
       { start: '2026-09-28', summary: 'Trash day' },
     ], now);
     expect(rows).toEqual([
-      { head: 'Today' }, { time: '3:00 PM', title: 'Soccer' },
-      { head: 'Tonight' }, { time: '7:30 PM', title: 'Movie night' },
-      { head: 'Tomorrow' }, { time: 'All day', title: 'Trash day' }, { time: '7:45 AM', title: 'School drop-off' },
+      { head: 'Today' }, { time: '3:00 PM', title: 'Soccer', color: C0 },
+      { head: 'Tonight' }, { time: '7:30 PM', title: 'Movie night', color: C0 },
+      { head: 'Tomorrow' }, { time: 'All day', title: 'Trash day', color: C0 }, { time: '7:45 AM', title: 'School drop-off', color: C0 },
     ]);
   });
   it('shows an empty state', () => {
-    expect(upNext([], now)).toEqual([{ head: 'Today' }, { time: '', title: 'Nothing scheduled' }]);
+    expect(upNext([], now)).toEqual([{ head: 'Today' }, { time: '', title: 'Nothing scheduled', color: 'rgba(255,255,255,.3)' }]);
   });
   it('builds the AI timeline newest first with icons', () => {
     const f = timeline([

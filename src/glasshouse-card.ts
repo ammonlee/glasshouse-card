@@ -5,6 +5,7 @@ import type { GlasshouseConfig } from './config/types';
 import { validateConfig } from './config/schema';
 import { buildModel, relevantIds, changed, type Model, type Tab, type Extras } from './model/index';
 import { planSync, dayString, rosterChores } from './model/chores';
+import { calendars } from './model/calendar';
 import { Overrides } from './overrides';
 import { run, toggleCall, needsHold, alarmDisarmable, type Call } from './actions';
 import { domainOf, val } from './model/util';
@@ -208,10 +209,10 @@ export class GlasshouseCard extends LitElement {
   private async _refreshCalendars() {
     const c = this._config, now = new Date();
     try {
-      const cals = ([] as string[]).concat(c.home?.calendar || []);
+      const cals = calendars(c.home?.calendar);
       if (cals.length) {
         const end = new Date(now); end.setDate(end.getDate() + 2); end.setHours(0, 0, 0, 0);
-        this._x.calendar = (await Promise.all(cals.map((id) => this._events(id, now, end)))).flat();
+        this._x.calendar = (await Promise.all(cals.map(async (cal) => (await this._events(cal.entity, now, end)).map((e) => ({ ...e, color: cal.color }))))).flat();
       }
       if (c.security?.timeline) this._x.timeline = await this._events(c.security.timeline, new Date(+now - 12 * 3600_000), new Date(+now + 60_000));
       this._rev++;

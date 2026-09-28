@@ -74,7 +74,7 @@ export function homeView(m: Model, card: GlasshouseCard) {
   const upNext = m.upNext.map((e) => ('head' in e
     ? html`<span class="eyebrow" style="padding:6px 4px 0">${e.head}</span>`
     : html`<div class="row" style="min-height:54px;border-radius:18px;padding:6px 12px;gap:10px;background:rgba(255,255,255,.07)">
-        <span style="width:8px;height:8px;flex:none;border-radius:4px;background:#ADB5E5;box-shadow:0 0 10px #ADB5E5"></span>
+        <span data-test="event-dot" style="width:8px;height:8px;flex:none;border-radius:4px;background:${e.color};box-shadow:0 0 10px ${e.color}"></span>
         <div class="col" style="min-width:0;line-height:1.3"><span class="num" style="font-size:12px;color:rgba(255,255,255,.66)">${e.time}</span><span class="ellip" style="font-size:14px;font-weight:600">${e.title}</span></div></div>`));
   const sp = (delta: number) => { const call = t && setpointCall(t, delta); if (call) card.callSvc('climate', 'set_temperature', call.data, { entity_id: t!.entity }); };
 

@@ -39,7 +39,9 @@ alerts:
 home:
   doorbell: { camera: camera.doorbell, event: event.doorbell, lock: lock.front_door }
   chores: { todo: todo.chores, roster: sensor.chore_roster_today, roll_call: script.chore_roll_call }
-  calendar: calendar.family
+  calendar:                  # one id, or a list; each event dot uses its calendar's colour
+    - calendar.family          # automatic colour by position
+    - { entity: calendar.school, color: orange }   # blue|green|gold|orange|purple|grey or #hex
   thermostat: climate.main_floor
   media: media_player.living_room
   good_night: script.good_night_house

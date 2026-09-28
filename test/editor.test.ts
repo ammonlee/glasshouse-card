@@ -39,3 +39,17 @@ describe('<glasshouse-card-editor>', () => {
     expect(got.at(-1).rooms[0].exclude).toEqual(['switch.unknown_switch_3']);
   });
 });
+
+describe('editor keeps Up next calendars', () => {
+  it('editing the Home form does not drop home.calendar', async () => {
+    const el = document.createElement('glasshouse-card-editor') as any;
+    el.hass = miniHouse();
+    el.setConfig({ type: 'custom:glasshouse-card', home: { thermostat: 'climate.a', calendar: [{ entity: 'calendar.family', color: 'purple' }] } });
+    el._tab = 'home'; document.body.appendChild(el); await el.updateComplete;
+    const got: any[] = [];
+    el.addEventListener('config-changed', (e: CustomEvent) => got.push(e.detail.config));
+    const form = [...el.shadowRoot!.querySelectorAll('ha-form')][0] as HTMLElement;
+    form.dispatchEvent(new CustomEvent('value-changed', { detail: { value: { thermostat: 'climate.b' } } }));
+    expect(got.at(-1).home).toEqual({ thermostat: 'climate.b', calendar: [{ entity: 'calendar.family', color: 'purple' }] });
+  });
+});

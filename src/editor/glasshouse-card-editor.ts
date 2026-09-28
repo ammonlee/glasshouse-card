@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import type { HassLike } from '../types';
-import type { GlasshouseConfig, PersonCfg, RoomCfg, ClimateRoomCfg, CarCfg, CameraCfg, AlertRule } from '../config/types';
+import type { GlasshouseConfig, CalendarCfg, PersonCfg, RoomCfg, ClimateRoomCfg, CarCfg, CameraCfg, AlertRule } from '../config/types';
 import { missingEntities } from '../config/schema';
 import { discover } from '../model/rooms';
 import { SCHEMAS } from './schemas';
@@ -59,9 +59,11 @@ export class GlasshouseCardEditor extends LitElement {
     this._emit({ ...this._config, rooms });
   }
 
-  private _form(schema: unknown[], data: unknown, path: string[]) {
+  /** `keep` holds keys of the section that this form doesn't show (e.g. home.calendar, edited as a list)
+   *  so a form edit can't drop them when it rewrites the section. */
+  private _form(schema: unknown[], data: unknown, path: string[], keep: Record<string, unknown> = {}) {
     return html`<ha-form .hass=${this.hass} .data=${data || {}} .schema=${schema} .computeLabel=${(s: any) => s.label || s.name}
-      @value-changed=${(e: CustomEvent) => this._onForm(path, e.detail.value)}></ha-form>`;
+      @value-changed=${(e: CustomEvent) => this._onForm(path, { ...e.detail.value, ...keep })}></ha-form>`;
   }
   private _list<T>(key: string[], items: T[] | undefined, schema: unknown[], labelOf: (t: T) => string, blank: T) {
     return listEditor(items || [], schema, labelOf, (next) => this._emit(setIn(this._config as any, key, next) as GlasshouseConfig), this.hass, blank);
@@ -78,7 +80,15 @@ export class GlasshouseCardEditor extends LitElement {
       case 'people': return this._list<PersonCfg>(['people'], c.people, SCHEMAS.person, (p) => p.name || name(p.person), { person: '' });
       case 'alerts': return html`<h4>Safety (red)</h4>${this._list<AlertRule>(['alerts', 'safety'], (c.alerts?.safety || []).map((r) => (typeof r === 'string' ? { entity: r } : r)), SCHEMAS.alert, (r) => r.label || name(r.entity), { entity: '' })}
         <h4>Nudges (amber)</h4>${this._list<AlertRule>(['alerts', 'nudge'], (c.alerts?.nudge || []).map((r) => (typeof r === 'string' ? { entity: r } : r)), SCHEMAS.alert, (r) => r.label || name(r.entity), { entity: '' })}`;
-      case 'home': return this._form(SCHEMAS.home, { ...c.home, calendar: c.home?.calendar ? ([] as string[]).concat(c.home.calendar) : undefined }, ['home']);
+      case 'home': {
+        const { calendar, ...home } = c.home || {};
+        const cals = ([] as Array<string | CalendarCfg>).concat(calendar || []).map((x) => (typeof x === 'string' ? { entity: x } : x));
+        return html`<div style="display:contents">
+          <div style="display:contents">${this._form(SCHEMAS.home, home, ['home'], calendar ? { calendar } : {})}</div>
+          <h4>Up next calendars</h4>
+          <div style="display:contents">${this._list<CalendarCfg>(['home', 'calendar'], cals, SCHEMAS.calendar, (x) => name(x.entity), { entity: '' })}</div>
+        </div>`;
+      }
       case 'security': return html`${this._form(SCHEMAS.security, c.security, ['security'])}
         <h4>Cameras (first is the large tile)</h4>${this._list<CameraCfg>(['security', 'cameras'], (c.security?.cameras || []).map((x) => (typeof x === 'string' ? { entity: x } : x)), SCHEMAS.camera, (x) => x.name || name(x.entity), { entity: '' })}`;
       case 'rooms': return html`<div style="display:contents">
