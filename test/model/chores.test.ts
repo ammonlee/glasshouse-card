@@ -122,6 +122,25 @@ describe('choreRows', () => {
     const rows = choreRows(specs, [{ uid: 'm', summary: 'Dante · Unload dishes · Morning', status: 'completed', due: '2026-09-27' }], ppl, '2026-09-27');
     expect(rows[0]).toMatchObject({ key: 'unload', what: 'Unload dishes', done: false, uid: undefined, summary: 'Dante · Unload dishes · Evening' });
   });
+  it('numbers chart chores and marks a row blocked while its predecessor is not done this session', () => {
+    const rows = choreRows(specs, [], ppl, '2026-09-27');
+    expect(rows.map((r) => r.num)).toEqual([1, 2, 3, 4]);
+    expect(rows.map((r) => r.after)).toEqual([undefined, 'Dante', 'Beth', undefined]);
+  });
+  it('unblocks the next chore once the one ahead is done, and never blocks a done row', () => {
+    const d = (summary: string) => ({ uid: summary, summary, status: 'completed' as const, due: '2026-09-27' });
+    expect(choreRows(specs, [d('Dante · Unload dishes · Evening')], ppl, '2026-09-27').map((r) => r.after)).toEqual([undefined, undefined, 'Beth', undefined]);
+    expect(choreRows(specs, [d('June · Garbage out · Evening')], ppl, '2026-09-27').map((r) => r.after)).toEqual([undefined, 'Dante', undefined, undefined]);
+  });
+  it('the morning item being done does not unblock the evening chain', () => {
+    const rows = choreRows(specs, [{ uid: 'm', summary: 'Dante · Unload dishes · Morning', status: 'completed', due: '2026-09-27' }], ppl, '2026-09-27');
+    expect(rows[1].after).toBe('Dante');
+  });
+  it('laundry has no number and is never blocked; a missing predecessor blocks nothing', () => {
+    const h = makeHass([{ entity_id: 'sensor.r', state: 'x', attributes: { assignments: { unload: 'Dante', garbage: 'June', laundry: 'Beth' }, morning_keys: ['unload', 'load', 'garbage'], evening_keys: ['unload', 'load', 'garbage'] } }]);
+    const rows = choreRows(rosterChores(h, 'sensor.r', new Date('2026-09-27T08:00:00')), [], ppl, '2026-09-27');
+    expect(rows.map((r) => [r.key, r.num, r.after])).toEqual([['unload', 1, undefined], ['garbage', 3, undefined], ['laundry', undefined, undefined]]);
+  });
   it('falls back to raw to-do items without a roster', () => {
     const rows = choreRows(null, [{ uid: 'a', summary: 'June · Feed the cat', status: 'needs_action' }, { uid: 'b', summary: 'Water plants', status: 'completed' }, { uid: 'c', summary: 'Old', status: 'completed', due: '2026-09-20' }], ppl, '2026-09-27');
     expect(rows).toEqual([

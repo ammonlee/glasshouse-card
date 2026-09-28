@@ -6,12 +6,17 @@ export interface TodoItem { uid: string; summary: string; status: 'needs_action'
 /** `legacy` is the summary v0.1.0 seeded for this chore, when it differs from `summary`. */
 export interface ChoreSpec { key: string; who: string; label: string; icon: string; summary: string; legacy?: string }
 export interface SyncPlan { remove: string[]; add: string[] }
-export interface ChoreRow { key: string; initials: string; who: string; what: string; icon: string; color: string; done: boolean; uid?: string; summary?: string }
+export interface ChoreRow { key: string; initials: string; who: string; what: string; icon: string; color: string; done: boolean; uid?: string; summary?: string;
+  /** Chart number (unload 1, load 2, garbage 3, counters 4). */ num?: number;
+  /** Set while the chore ahead in the 1 → 2 → 3 chain is not done this session: that person's name. */ after?: string }
 
 export const SEP = ' · ';
 export const SHORT: Record<string, string> = { unload: 'Unload dishes', load: 'Load dishes', garbage: 'Garbage out', counters: 'Counters & appliances', laundry: 'Laundry' };
 /** The labels v0.1.0 seeded with, kept so its items are still recognized (cleaned up, never duplicated). */
 export const LEGACY: Record<string, string> = { unload: 'Unload dishes', load: 'Load dishes', garbage: 'Take out trash', counters: 'Clean appliances & countertops', laundry: 'Laundry' };
+export const ORDER: Record<string, number> = { unload: 1, load: 2, garbage: 3, counters: 4 };
+/** The chore that must be done first, per the chart: 1 → 2 → 3 (counters and laundry have none). */
+export const PREV: Record<string, string> = { load: 'unload', garbage: 'load' };
 export const ICONS: Record<string, string> = { unload: 'utensils', load: 'utensils-crossed', garbage: 'trash-2', counters: 'spray-can', laundry: 'washing-machine' };
 
 export const SESSIONS = ['Morning', 'Evening'] as const;
@@ -83,10 +88,16 @@ export function choreRows(specs: ChoreSpec[] | null, all: TodoItem[], ppl: Perso
   const items = all.filter((i) => isToday(i, today));
   const bySummary = new Map(items.map((i) => [i.summary, i]));
   if (specs) {
-    return specs.map((s) => {
+    const rows: ChoreRow[] = specs.map((s) => {
       const it = bySummary.get(s.summary);
-      return { key: s.key, ...personFor(ppl, s.who), what: s.label, icon: s.icon, done: it?.status === 'completed', uid: it?.uid, summary: s.summary };
+      return { key: s.key, ...personFor(ppl, s.who), what: s.label, icon: s.icon, done: it?.status === 'completed', uid: it?.uid, summary: s.summary, num: ORDER[s.key] };
     });
+    // Specs are this session's chores, so a predecessor row's `done` is already per-session.
+    for (const r of rows) {
+      const prev = PREV[r.key] && rows.find((p) => p.key === PREV[r.key]);
+      if (prev && !prev.done && !r.done) r.after = prev.who;
+    }
+    return rows;
   }
   return items.map((i) => {
     const at = i.summary.indexOf(SEP);

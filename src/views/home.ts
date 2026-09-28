@@ -16,11 +16,11 @@ export function choreList(m: Model, card: GlasshouseCard, rowH: number | null, t
       ${all ? html`<div class="btn circle" style="background:#19BE82;color:#07121A;box-shadow:0 0 24px rgba(25,190,130,.7),inset 0 1px 0 rgba(255,255,255,.45)">${icon('party-popper', 20)}</div>` : trailing}
     </div>
     <div style="display:contents">${m.chores.map((c) => html`
-      <div class="chore-row ${c.done ? 'done' : ''}" style="${rowH ? `height:${rowH}px;` : 'flex:1;min-height:0;'}padding:0 6px 0 8px"
+      <div class="chore-row ${c.done ? 'done' : ''} ${c.after ? 'blocked' : ''}" style="${rowH ? `height:${rowH}px;` : 'flex:1;min-height:0;'}padding:0 6px 0 8px"
         @click=${() => card.toggleChore(c.uid, c.summary ?? `${c.who} · ${c.what}`, c.done)}>
         <div class="initials" style="box-shadow:inset 0 0 0 2px ${c.color}">${c.initials}</div>
-        <div class="col grow" style="line-height:1.3"><span style="font-size:16px;font-weight:600">${c.who}</span>
-          <span class="row" style="font-size:13px;gap:5px;color:${c.done ? '#BFF0DD' : 'rgba(255,255,255,.72)'}">${icon(c.icon, 14)}<span class="ellip">${c.what}</span></span></div>
+        <div class="col grow" style="line-height:1.3"><span class="row" style="gap:6px;font-size:16px;font-weight:600">${c.num ? html`<span class="chore-num">${c.num}</span>` : ''}<span class="ellip">${c.who}</span></span>
+          <span class="row" style="font-size:13px;gap:5px;color:${c.done ? '#BFF0DD' : 'rgba(255,255,255,.72)'}">${icon(c.icon, 14)}<span class="ellip">${c.after ? `After ${c.after}` : c.what}</span></span></div>
         <div class="check ${c.done ? 'done' : ''}" style="width:56px;height:56px">${icon('check', 22)}</div>
       </div>`)}</div>`;
 }

@@ -63,6 +63,8 @@ export const glass = css`
   .check.done { background: var(--green); color: #07121A; box-shadow: 0 4px 14px rgba(25,190,130,.45), inset 0 1px 0 rgba(255,255,255,.4); }
   .chore-row { border-radius: 22px; display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.07); transition: background .2s; }
   .chore-row.done { background: rgba(98,215,172,.14); }
+  .chore-row.blocked { opacity: .5; }
+  .chore-num { width: 18px; height: 18px; flex: none; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; line-height: 1; background: rgba(255,255,255,.16); color: rgba(255,255,255,.85); }
   .scrim { position: absolute; inset: 0; background: rgba(5,6,12,.45); backdrop-filter: blur(20px) saturate(140%); display: flex; align-items: center; justify-content: center; animation: fade .18s ease-out; z-index: 3; }
   .sheet { border-radius: 36px; padding: 24px; display: flex; flex-direction: column; gap: 16px; background: linear-gradient(160deg,rgba(255,255,255,.2),rgba(255,255,255,.07)); border: 1px solid rgba(255,255,255,.2); box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 30px 80px rgba(0,0,0,.5); backdrop-filter: blur(40px) saturate(180%); animation: pop .2s ease-out; }
   .big-btn { height: 88px; border-radius: 28px; padding: 0 16px; display: flex; align-items: center; gap: 12px; position: relative; overflow: hidden; }
