@@ -10,10 +10,10 @@ import { minsSince, attr, val } from '../model/util';
 /** The megaphone / "Roll call" button: runs the configured roll-call script; nothing when none is set. */
 /** Robot vacuum rows, shared by the Home card (compact) and the Family tab. */
 export function vacuumRows(m: Model, card: GlasshouseCard, compact = false) {
-  return html`<div style="display:contents">${m.vacuums.map((v) => html`<div class="tile t-${v.tone}" style="height:${compact ? 48 : 64}px;border-radius:${compact ? 18 : 22}px;padding:0 ${compact ? 4 : 6}px 0 ${compact ? 10 : 12}px;align-items:center;gap:${compact ? 10 : 12}px">
+  return html`<div style="display:contents">${m.vacuums.map((v) => html`<div class="tile t-${v.tone}" style="height:${compact ? 48 : 64}px;border-radius:${compact ? 18 : 22}px;padding:0 ${compact ? 8 : 6}px 0 ${compact ? 12 : 12}px;align-items:center;gap:${compact ? 10 : 12}px">
     ${icon('bot', compact ? 18 : 22, 'color:var(--ic)')}
     <div class="col grow" style="line-height:1.25"><span class="ellip" style="font-size:${compact ? 14 : 15}px;font-weight:600">${v.name}</span><span class="ellip st" style="font-size:12px">${v.text}</span></div>
-    ${v.state === 'offline' ? '' : html`<div class="btn" data-test="vac-${v.entity}" style="height:${compact ? 40 : 48}px;padding:0 ${compact ? 12 : 14}px;font-size:13px;gap:6px" @click=${() => card.callSvc('vacuum', v.action.service, {}, { entity_id: v.entity })}>${icon(v.action.icon, 16)}${v.action.label}</div>`}
+    ${v.state === 'offline' ? '' : html`<div class="btn" data-test="vac-${v.entity}" style="height:${compact ? 32 : 48}px;padding:0 ${compact ? 12 : 14}px 0 ${compact ? 10 : 14}px;font-size:13px;gap:${compact ? 5 : 6}px;${compact ? 'box-shadow:none;background:rgba(255,255,255,.14)' : ''}" @click=${() => card.callSvc('vacuum', v.action.service, {}, { entity_id: v.entity })}>${icon(v.action.icon, compact ? 14 : 16)}${v.action.label}</div>`}
   </div>`)}</div>`;
 }
 
