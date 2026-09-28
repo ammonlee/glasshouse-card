@@ -54,10 +54,11 @@ describe('overlays', () => {
     expect(el.hass.calls.at(-1)).toEqual(['lock', 'unlock', {}, { entity_id: 'lock.front' }]);
     vi.useRealTimers();
   });
-  it('shows a Talk button in the doorbell takeover', async () => {
+  it('shows a Talk button in the doorbell takeover when a doorbell speaker is configured', async () => {
     const el = await mount();
+    el.setConfig({ ...cfg, home: { doorbell: { ...cfg.home.doorbell, speaker: 'media_player.door_speaker' } } });
     el.ring(); await el.updateComplete;
-    expect(el.shadowRoot!.textContent).toContain('Talk on the doorbell app');
+    expect(el.shadowRoot!.textContent).toContain('Pick a reply to say at the door');
   });
   it('swallows the synthesized click after a completed hold, so it does not double-fire', async () => {
     vi.useFakeTimers();

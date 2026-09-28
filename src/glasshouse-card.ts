@@ -26,7 +26,7 @@ import { nightView } from './views/night';
 import { attachHold } from './hold';
 import { stubConfig } from './config/stub';
 
-export type Overlay = { kind: 'alerts' } | { kind: 'room'; id: string } | { kind: 'camera'; entity: string; name: string } | { kind: 'doorbell'; until: number; pkg: boolean };
+export type Overlay = { kind: 'alerts' } | { kind: 'room'; id: string } | { kind: 'camera'; entity: string; name: string } | { kind: 'doorbell'; until: number; pkg: boolean; talk?: boolean };
 
 /** First camera in the config (doorbell, package, security, rooms), used to force-load ha-camera-stream. */
 const firstCamera = (c?: GlasshouseConfig) => [c?.home?.doorbell?.camera, c?.home?.doorbell?.package_camera,

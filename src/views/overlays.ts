@@ -23,6 +23,22 @@ function alertsSheet(m: Model, card: GlasshouseCard) {
     <div class="col" style="gap:10px">${rows}</div></div>`;
 }
 
+export const DEFAULT_REPLIES = ['Be right there!', 'Please leave the package at the door. Thank you!', "Sorry, we can't come to the door right now."];
+
+/** The TTS engine for doorbell replies: the configured one, else Home Assistant Cloud, else the first available. */
+function ttsEngine(card: GlasshouseCard): string | undefined {
+  const d = card._config.home?.doorbell, ids = Object.keys(card.hass.states).filter((e) => e.startsWith('tts.'));
+  return d?.tts || ids.find((e) => e === 'tts.home_assistant_cloud') || ids[0];
+}
+
+/** Speaks a quick reply through the doorbell's speaker and restarts the takeover countdown. */
+async function reply(o: Extract<Overlay, { kind: 'doorbell' }>, card: GlasshouseCard, message: string) {
+  const d = card._config.home?.doorbell || {}, tts = ttsEngine(card);
+  card.openOverlay({ ...o, talk: false, until: Date.now() + (d.takeover_seconds ?? 45) * 1000 });
+  if (!d.speaker || !tts) return;
+  if (await card.callSvc('tts', 'speak', { media_player_entity_id: d.speaker, message, cache: true }, { entity_id: tts })) card.showToast(`Said: "${message}"`);
+}
+
 function doorbell(o: Extract<Overlay, { kind: 'doorbell' }>, card: GlasshouseCard) {
   const d = card._config.home?.doorbell || {}, h = card.view;
   const left = Math.max(0, Math.ceil((o.until - Date.now()) / 1000)), total = d.takeover_seconds ?? 45;
@@ -42,12 +58,15 @@ function doorbell(o: Extract<Overlay, { kind: 'doorbell' }>, card: GlasshouseCar
         <span style="font-size:13px;line-height:1.4;color:var(--muted)">Rang just now</span>
       </div>
       <div class="grow"></div>
-      <div class="big-btn capsule" style="height:88px;border-radius:28px;background:linear-gradient(160deg,rgba(111,125,220,.62),rgba(70,85,187,.26));border:1px solid rgba(173,181,229,.45);box-shadow:inset 0 1px 0 rgba(220,225,255,.55)">${icon('mic', 24)}<div class="col" style="line-height:1.25"><span style="font-size:17px;font-weight:600">Talk</span><span style="font-size:12px;color:var(--muted)">Talk on the doorbell app</span></div></div>
+      ${o.talk ? html`<div style="display:contents">${(d.replies?.length ? d.replies : DEFAULT_REPLIES).slice(0, 4).map((r) => html`
+        <div class="big-btn capsule" data-test="reply" style="height:auto;min-height:72px;border-radius:24px;padding:12px 16px;font-size:16px;font-weight:600;line-height:1.3" @click=${() => reply(o, card, r)}>${r}</div>`)}
+        <div class="big-btn capsule" style="height:56px;border-radius:28px" @click=${() => card.openOverlay({ ...o, talk: false })}>${icon('x', 20)}<span style="font-size:15px;font-weight:600">Back</span></div></div>` : html`<div style="display:contents">
+      ${d.speaker ? html`<div class="big-btn capsule" data-test="talk" style="height:88px;border-radius:28px;background:linear-gradient(160deg,rgba(111,125,220,.62),rgba(70,85,187,.26));border:1px solid rgba(173,181,229,.45);box-shadow:inset 0 1px 0 rgba(220,225,255,.55)" @click=${() => card.openOverlay({ ...o, talk: true })}>${icon('mic', 24)}<div class="col" style="line-height:1.25"><span style="font-size:17px;font-weight:600">Talk</span><span style="font-size:12px;color:var(--muted)">Pick a reply to say at the door</span></div></div>` : ''}
       ${lockId ? html`<div class="big-btn" data-hold=${lockHold ? lockId : ''} @click=${() => card.tap(lockId)} style="background:linear-gradient(160deg,rgba(25,190,130,.4),rgba(25,190,130,.14));border:1px solid rgba(98,215,172,.45);box-shadow:inset 0 1px 0 rgba(210,245,232,.4)">
         ${icon(locked ? 'lock-open' : 'lock', 24, 'color:#98E6CA')}<div class="col" style="line-height:1.25"><span style="font-size:17px;font-weight:600">${locked ? 'Unlock' : 'Lock'}</span><span style="font-size:12px;color:#D2F5E8">${lockHold ? 'Hold 1 second' : locked ? 'Tap to unlock' : 'Tap to lock'}</span></div><div class="hold-fill"></div></div>` : ''}
       ${d.package_camera ? html`<div class="big-btn capsule" style="height:88px;border-radius:28px" @click=${() => card.openOverlay({ ...o, pkg: !o.pkg })}>${icon('package', 24)}<div class="col" style="line-height:1.25"><span style="font-size:17px;font-weight:600">${o.pkg ? 'Door cam' : 'Package cam'}</span><span style="font-size:12px;color:var(--muted)">${o.pkg ? 'Look ahead' : 'Look down'}</span></div></div>` : ''}
       <div class="big-btn capsule" style="height:88px;border-radius:28px" @click=${() => card.closeOverlay()}>${icon('x', 24)}<div class="col" style="line-height:1.25"><span style="font-size:17px;font-weight:600">Dismiss</span><span style="font-size:12px;color:var(--muted)">Closes in ${left} s</span></div>
-        <div style="position:absolute;left:0;bottom:0;height:4px;width:${(left / total) * 100}%;background:rgba(255,255,255,.55);transition:width 1s linear"></div></div>
+        <div style="position:absolute;left:0;bottom:0;height:4px;width:${(left / total) * 100}%;background:rgba(255,255,255,.55);transition:width 1s linear"></div></div></div>`}
     </div></div>`;
 }
 

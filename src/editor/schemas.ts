@@ -11,7 +11,7 @@ export const SCHEMAS = {
     ents('confirm_hold', 'Hold to open/unlock (leave empty for all locks and garage doors)', ['lock', 'cover']),
   ],
   home: [
-    { name: 'doorbell', label: 'Doorbell', type: 'expandable', schema: [ent('camera', 'Camera', 'camera'), ent('package_camera', 'Package camera', 'camera'), ent('event', 'Doorbell event', 'event'), ent('lock', 'Front door lock', 'lock'), { name: 'takeover_seconds', label: 'Takeover seconds', selector: { number: { min: 10, max: 180, mode: 'box' } } }] },
+    { name: 'doorbell', label: 'Doorbell', type: 'expandable', schema: [ent('camera', 'Camera', 'camera'), ent('package_camera', 'Package camera', 'camera'), ent('event', 'Doorbell event', 'event'), ent('lock', 'Front door lock', 'lock'), ent('speaker', 'Doorbell speaker (for Talk)', 'media_player'), ent('tts', 'Talk voice (optional)', 'tts'), { name: 'replies', label: 'Talk quick replies (optional)', selector: { text: { multiple: true } } }, { name: 'takeover_seconds', label: 'Takeover seconds', selector: { number: { min: 10, max: 180, mode: 'box' } } }] },
     { name: 'chores', label: 'Chores', type: 'expandable', schema: [ent('todo', 'Chores to-do list', 'todo'), ent('roster', 'Roster sensor (optional)', 'sensor'), ent('roll_call', 'Roll call script (optional)', 'script')] },
     ent('thermostat', 'Thermostat', 'climate'),
     ent('media', 'Media player', 'media_player'),

@@ -37,7 +37,8 @@ alerts:
   safety: [cover.garage_door, binary_sensor.leak]
   nudge:  [lock.back_door, { entity: sensor.co2, above: 1200, label: Air quality poor, icon: wind }]
 home:
-  doorbell: { camera: camera.doorbell, event: event.doorbell, lock: lock.front_door }
+  doorbell: { camera: camera.doorbell, event: event.doorbell, lock: lock.front_door,
+              speaker: media_player.doorbell_speaker }   # Talk → quick replies spoken at the door (optional: tts, replies)
   chores: { todo: todo.chores, roster: sensor.chore_roster_today, roll_call: script.chore_roll_call }
   calendar:                  # one id, or a list; each event dot uses its calendar's colour
     - calendar.family          # automatic colour by position

@@ -19,7 +19,7 @@ export interface GlasshouseConfig {
   people?: PersonCfg[];
   alerts?: { safety?: Array<string | AlertRule>; nudge?: Array<string | AlertRule>; secure_label?: string };
   home?: {
-    doorbell?: { camera?: string; package_camera?: string; event?: string; lock?: string; takeover_seconds?: number };
+    doorbell?: { camera?: string; package_camera?: string; event?: string; lock?: string; takeover_seconds?: number; speaker?: string; tts?: string; replies?: string[] };
     chores?: { todo?: string; roster?: string; roll_call?: string };
     calendar?: string | Array<string | CalendarCfg>;
     thermostat?: string;
