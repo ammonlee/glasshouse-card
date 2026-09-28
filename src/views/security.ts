@@ -37,13 +37,19 @@ export function securityView(m: Model, card: GlasshouseCard) {
     return html`<div class="row" style="min-width:0;height:44px;border-radius:16px;padding:0 10px;gap:8px;font-size:13px;background:${bad ? 'rgba(237,64,64,.3)' : 'rgba(255,255,255,.07)'}">${icon(ic, 16, `color:${c}`)}<span class="ellip grow">${fname(h, id)}</span><span style="font-weight:500;color:${c}">${text}</span></div>`;
   };
   const alarm = s.alarm, as = val(h, alarm) || 'unavailable';
-  const armed = { disarmed: 'Disarmed', armed_home: 'Armed · Home', armed_away: 'Armed · Away', armed_night: 'Armed · Night', arming: 'Arming…', pending: 'Pending…', triggered: 'TRIGGERED' }[as] || 'Unavailable';
-  // The active mode's button disarms, which needs the 1 s hold (card.holdAction); arming is a single tap.
+  const armed = { disarmed: 'Disarmed', armed_home: 'Armed · Home', armed_away: 'Armed · Away', armed_night: 'Armed · Night', armed_vacation: 'Armed · Vacation', armed_custom_bypass: 'Armed · Custom', arming: 'Arming…', pending: 'Pending…', triggered: 'TRIGGERED' }[as] || 'Unavailable';
+  // Disarmed: one single-tap button per arm mode the panel supports (supported_features bits; both Home and Away
+  // when the panel doesn't report them). Armed / arming / pending / triggered: one Disarm button behind the 1 s hold.
+  const feats = attr<number>(h, alarm, 'supported_features');
+  const MODES: Array<[number, string, string, string, string]> = [[1, 'alarm_arm_home', 'armed_home', 'house', 'Home'], [2, 'alarm_arm_away', 'armed_away', 'shield-check', 'Away'], [4, 'alarm_arm_night', 'armed_night', 'moon', 'Night']];
+  const armModes = MODES.filter(([bit]) => (feats == null ? bit !== 4 : (feats & bit) !== 0));
   const disarmHold = !!alarm && card.needsHold(alarm);
-  const armBtn = (svc: string, st: string, ic: string, label: string) => {
-    const active = as === st;
-    return html`<div class="btn" data-test="arm-${st}" data-hold=${active && disarmHold ? alarm! : ''} @click=${() => { if (!active) card.callSvc('alarm_control_panel', svc, {}, { entity_id: alarm! }); }}
-    style="height:56px;padding:0 16px;font-size:14px;gap:6px;position:relative;overflow:hidden;${active ? 'background:rgba(173,181,229,.35);color:#fff' : ''}">${icon(ic, 16)}${label}<div class="hold-fill"></div></div>`;
+  const alarmButtons = () => {
+    if (as === 'disarmed') return armModes.map(([, svc, st, ic, label]) => html`<div class="btn" data-test="arm-${st}" @click=${() => card.callSvc('alarm_control_panel', svc, {}, { entity_id: alarm! })}
+      style="height:56px;padding:0 16px;font-size:14px;gap:6px">${icon(ic, 16)}${label}</div>`);
+    if (!disarmHold) return '';
+    const hot = as === 'triggered' || as === 'pending';
+    return html`<div class="btn" data-test="disarm" data-hold=${alarm!} style="height:56px;padding:0 18px;font-size:14px;gap:6px;position:relative;overflow:hidden;${hot ? 'background:#ED4040;color:#fff' : 'background:rgba(173,181,229,.35);color:#fff'}">${icon('shield', 16)}Disarm<div class="hold-fill"></div></div>`;
   };
 
   return html`<div class="view" style="display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px">
@@ -63,8 +69,8 @@ export function securityView(m: Model, card: GlasshouseCard) {
     <div class="col" style="min-height:0;gap:12px">
       ${alarm ? html`<div class="glass row" style="border-radius:28px;padding:14px;gap:12px">
         <div class="btn circle" style=${as.startsWith('armed') ? 'background:rgba(173,181,229,.35)' : as === 'triggered' ? 'background:#ED4040' : ''}>${icon(as === 'disarmed' ? 'shield' : 'shield-check', 22)}</div>
-        <div class="col grow" style="line-height:1.25"><span style="font-size:16px;font-weight:600">${armed}</span><span style="font-size:12px;color:var(--subtle)">${fname(h, alarm)}${disarmHold ? ' · hold to disarm' : ''}</span></div>
-        ${armBtn('alarm_arm_home', 'armed_home', 'house', 'Home')}${armBtn('alarm_arm_away', 'armed_away', 'shield-check', 'Away')}
+        <div class="col grow" style="line-height:1.25"><span style="font-size:16px;font-weight:600">${armed}</span><span style="font-size:12px;color:var(--subtle)">${fname(h, alarm)}${as !== 'disarmed' && disarmHold ? ' · hold Disarm for 1 s' : ''}</span></div>
+        <div class="row" style="gap:8px">${alarmButtons()}</div>
       </div>` : ''}
       ${(s.locks?.length || s.covers?.length) ? html`<div class="glass col" style="border-radius:28px;padding:14px;gap:6px"><span class="eyebrow" style="padding:2px 6px 4px">Doors</span>
         ${[...(s.locks || []), ...(s.covers || [])].map(doorRow)}</div>` : ''}

@@ -67,27 +67,46 @@ describe('security view', () => {
     b.click(); await Promise.resolve();
     expect(g.calls.at(-1)).toEqual(['cover', 'close_cover', {}, { entity_id: 'cover.garage' }]);
   });
-  it('disarming needs a 1 s hold; arming stays a single tap (Important 8)', async () => {
-    vi.useFakeTimers();
-    const g = makeHass([{ entity_id: 'alarm_control_panel.home', state: 'armed_home', attributes: { friendly_name: 'Alarm' } }]);
+  async function alarmView(state: string, features?: number) {
+    const g = makeHass([{ entity_id: 'alarm_control_panel.home', state, attributes: { friendly_name: 'Alarm', ...(features != null ? { supported_features: features } : {}) } }]);
     const el = document.createElement('glasshouse-card') as any;
-    el.setConfig({ type: 'custom:glasshouse-card', security: { alarm: 'alarm_control_panel.home', locks: [] , cameras: ['camera.none'] } });
+    el.setConfig({ type: 'custom:glasshouse-card', security: { alarm: 'alarm_control_panel.home', locks: [], cameras: ['camera.none'] } });
     el.hass = g; document.body.appendChild(el); await el.updateComplete;
     el.nav('security'); await el.updateComplete;
-    const home = el.shadowRoot!.querySelector('[data-test="arm-armed_home"]') as HTMLElement;
-    expect(home.getAttribute('data-hold')).toBe('alarm_control_panel.home');
-    home.click(); await Promise.resolve();
-    expect(g.calls.length).toBe(0);
-    home.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true }));
-    vi.advanceTimersByTime(1001);
-    expect(g.calls.at(-1)).toEqual(['alarm_control_panel', 'alarm_disarm', {}, { entity_id: 'alarm_control_panel.home' }]);
-    home.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true }));
-    vi.advanceTimersByTime(1000);
-    const away = el.shadowRoot!.querySelector('[data-test="arm-armed_away"]') as HTMLElement;
-    expect(away.getAttribute('data-hold')).toBe('');
-    away.click(); await Promise.resolve();
+    const q = (sel: string) => el.shadowRoot!.querySelector(sel) as HTMLElement | null;
+    return { el, g, q };
+  }
+  it('disarmed: shows only the arm modes the panel supports, each a single tap', async () => {
+    const { g, q } = await alarmView('disarmed', 2);   // ARM_AWAY only
+    expect(q('[data-test="arm-armed_home"]')).toBeNull();
+    expect(q('[data-test="disarm"]')).toBeNull();
+    q('[data-test="arm-armed_away"]')!.click(); await Promise.resolve();
     expect(g.calls.at(-1)).toEqual(['alarm_control_panel', 'alarm_arm_away', {}, { entity_id: 'alarm_control_panel.home' }]);
-    vi.useRealTimers();
+  });
+  it('disarmed: shows Home and Away when the panel does not report its features', async () => {
+    const { q } = await alarmView('disarmed');
+    expect(q('[data-test="arm-armed_home"]')).not.toBeNull();
+    expect(q('[data-test="arm-armed_away"]')).not.toBeNull();
+  });
+  for (const state of ['armed_home', 'armed_away', 'armed_night', 'armed_vacation', 'armed_custom_bypass', 'arming', 'pending', 'triggered']) {
+    it(`${state}: one Disarm button that needs a 1 s hold, and no arm buttons`, async () => {
+      vi.useFakeTimers();
+      const { g, q } = await alarmView(state, 63);
+      expect(q('[data-test^="arm-"]')).toBeNull();
+      const d = q('[data-test="disarm"]')!;
+      expect(d.getAttribute('data-hold')).toBe('alarm_control_panel.home');
+      d.click(); await Promise.resolve();
+      expect(g.calls.length).toBe(0);
+      d.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true }));
+      vi.advanceTimersByTime(1001);
+      expect(g.calls.at(-1)).toEqual(['alarm_control_panel', 'alarm_disarm', {}, { entity_id: 'alarm_control_panel.home' }]);
+      vi.useRealTimers();
+    });
+  }
+  it('triggered: the Disarm button is red and the status reads TRIGGERED', async () => {
+    const { el, q } = await alarmView('triggered', 2);
+    expect(q('[data-test="disarm"]')!.getAttribute('style')).toContain('#ED4040');
+    expect(el.shadowRoot!.textContent).toContain('TRIGGERED');
   });
   it('hides a camera snapshot that fails to load (Minor b)', async () => {
     const el = await mount();

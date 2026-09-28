@@ -21,7 +21,7 @@ export const groupCall = (ids: string[], on: boolean): Call => ({
 });
 
 /** An alarm panel state a hold would disarm (arming is always a single tap). */
-export const alarmDisarmable = (s?: string) => !!s && (s.startsWith('armed') || s === 'triggered');
+export const alarmDisarmable = (s?: string) => !!s && (s.startsWith('armed') || s === 'triggered' || s === 'arming' || s === 'pending');
 
 const RISKY_COVER = new Set(['garage', 'gate', 'door']);
 /** A hold is needed when the entity is listed (the `confirm_hold` list, or by default every lock and every
