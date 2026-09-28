@@ -56,6 +56,8 @@ export class GlasshouseCard extends LitElement {
   private _x: Extras = { todoItems: [], calendar: [], timeline: [], laundryAck: null };
   private _timers: number[] = [];
   private _scale = 1;
+  private _cw = 1280;
+  private _ch = 800;
   private _ro?: ResizeObserver;
   private _streamWait = false;
 
@@ -151,8 +153,12 @@ export class GlasshouseCard extends LitElement {
   private _fit() {
     const r = this.getBoundingClientRect();
     if (!r.width) return;
-    const s = Math.min(r.width / 1280, (r.height || r.width * 0.625) / 800);
-    if (Math.abs(s - this._scale) > 0.001) { this._scale = s; this._rev++; }
+    // Scale the 1280×800 design to fit, then widen (or heighten) the canvas to the screen's shape so there are no
+    // empty bands; the flexible cards take up the extra room. Capped so extreme shapes don't over-stretch.
+    const h = r.height || r.width * 0.625;
+    const s = Math.min(r.width / 1280, h / 800);
+    const cw = Math.round(Math.min(r.width / s, 1280 * 1.4)), ch = Math.round(Math.min(h / s, 800 * 1.25));
+    if (Math.abs(s - this._scale) > 0.001 || cw !== this._cw || ch !== this._ch) { this._scale = s; this._cw = cw; this._ch = ch; this._rev++; }
   }
 
   // ---------- subscriptions: forecast, to-do, calendars ----------
@@ -355,7 +361,7 @@ export class GlasshouseCard extends LitElement {
     const tab = m.tabs.includes(this._tab) ? this._tab : 'home';
     const V = { home: homeView, security: securityView, rooms: roomsView, climate: climateView, garage: garageView, family: familyView }[tab];
     const cls = `frame ${this._config.blur === false ? 'noblur' : ''} ${this._hass!.connected ? '' : 'disconnected'}`;
-    return html`<div class=${cls} style="transform:translate(-50%,-50%) scale(${this._scale})">
+    return html`<div class=${cls} style="width:${this._cw}px;height:${this._ch}px;transform:translate(-50%,-50%) scale(${this._scale})">
       <div class="wallpaper wp-${this._config.wallpaper || 'dusk'}"></div>
       ${m.night ? html`<div style="display:contents">${nightView(m, this)}</div>
         <div style="display:contents">${this._overlay?.kind === 'doorbell' ? overlayView(this._overlay, m, this) : ''}</div>` : html`
