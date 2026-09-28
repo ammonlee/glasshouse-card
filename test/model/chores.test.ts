@@ -19,28 +19,26 @@ describe('rosterChores', () => {
   });
   it('suffixes twice-a-day chores with the morning session before noon', () => {
     expect(rosterChores(roster, 'sensor.roster', new Date('2026-09-27T11:59:00'))!.map((c) => c.summary))
-      .toEqual(['Dante · Unload dishes · Morning', 'Beth · Load dishes · Morning', 'June · Garbage out · Morning']);
+      .toEqual(['Dante · Unload dishes · Morning', 'Beth · Load dishes · Morning', 'June · Garbage out · Morning', 'Ben · Counters & appliances']);
   });
   it('switches to the evening session at 12:00', () => {
     expect(rosterChores(roster, 'sensor.roster', new Date('2026-09-27T12:00:00'))![0].summary).toBe('Dante · Unload dishes · Evening');
   });
-  it('does not suffix a chore that is only in one session', () => {
+  it('does not suffix a chore that is only in one session, but lists it all day', () => {
     const h = makeHass([{ entity_id: 'sensor.r', state: 'x', attributes: { assignments: { unload: 'Dante', counters: 'Ben' }, morning_keys: ['unload'], evening_keys: ['counters'] } }]);
-    expect(rosterChores(h, 'sensor.r', new Date('2026-09-27T08:00:00'))!.map((c) => c.summary)).toEqual(['Dante · Unload dishes']);
-    expect(rosterChores(h, 'sensor.r', new Date('2026-09-27T18:00:00'))!.map((c) => c.summary)).toEqual(['Ben · Counters & appliances']);
+    expect(rosterChores(h, 'sensor.r', new Date('2026-09-27T08:00:00'))!.map((c) => c.summary)).toEqual(['Dante · Unload dishes', 'Ben · Counters & appliances']);
+    expect(rosterChores(h, 'sensor.r', new Date('2026-09-27T18:00:00'))!.map((c) => c.summary)).toEqual(['Dante · Unload dishes', 'Ben · Counters & appliances']);
   });
-  it('uses morning keys before noon', () => {
-    expect(rosterChores(roster, 'sensor.roster', new Date('2026-09-27T08:00:00'))!.map((c) => c.key)).toEqual(['unload', 'load', 'garbage']);
+  it('lists the four chart chores in chart order in both sessions', () => {
+    expect(rosterChores(roster, 'sensor.roster', new Date('2026-09-27T08:00:00'))!.map((c) => c.key)).toEqual(['unload', 'load', 'garbage', 'counters']);
   });
-  it('keeps laundry all day, one unsuffixed item listed last', () => {
-    const h = makeHass([{ entity_id: 'sensor.r', state: 'Monday', attributes: {
+  it('never lists laundry (the Laundry card shows whose day it is)', () => {
+    const h = makeHass([{ entity_id: 'sensor.roster', state: 'Monday', attributes: {
       assignments: { unload: 'Dante', load: 'Beth', garbage: 'June', counters: 'Ben', laundry: 'June' },
       morning_keys: ['unload', 'laundry', 'load', 'garbage'], evening_keys: ['unload', 'load', 'garbage', 'counters'] } }]);
-    const am = rosterChores(h, 'sensor.r', new Date('2026-09-28T08:00:00'))!, pm = rosterChores(h, 'sensor.r', new Date('2026-09-28T19:00:00'))!;
-    expect(am.map((c) => c.key)).toEqual(['unload', 'load', 'garbage', 'laundry']);
-    expect(pm.map((c) => c.key)).toEqual(['unload', 'load', 'garbage', 'counters', 'laundry']);
-    expect(am.at(-1)!.summary).toBe('June · Laundry');
-    expect(pm.at(-1)!.summary).toBe('June · Laundry');
+    const am = rosterChores(h, 'sensor.roster', new Date('2026-09-27T08:00:00'))!, pm = rosterChores(h, 'sensor.roster', new Date('2026-09-27T18:00:00'))!;
+    expect(am.map((c) => c.key)).toEqual(['unload', 'load', 'garbage', 'counters']);
+    expect(pm.map((c) => c.key)).toEqual(['unload', 'load', 'garbage', 'counters']);
   });
   it('has no laundry row on catch-up / rest days', () => {
     expect(rosterChores(roster, 'sensor.roster', new Date('2026-09-27T08:00:00'))!.some((c) => c.key === 'laundry')).toBe(false);
@@ -106,7 +104,8 @@ describe('planSync', () => {
   it('keeps the morning items when the evening session starts', () => {
     const morning = rosterChores(roster, 'sensor.roster', new Date('2026-09-27T08:00:00'))!;
     const items = morning.map((c, i) => ({ uid: `m${i}`, summary: c.summary, status: 'completed' as const, due: '2026-09-27' }));
-    expect(planSync(specs, items, '2026-09-27')).toEqual({ remove: [], add: specs.map((s) => s.summary) });
+    // counters is one item for the whole day, so the one seeded this morning is not added again
+    expect(planSync(specs, items, '2026-09-27')).toEqual({ remove: [], add: ['Dante · Unload dishes · Evening', 'Beth · Load dishes · Evening', 'June · Garbage out · Evening'] });
   });
 });
 
@@ -136,10 +135,10 @@ describe('choreRows', () => {
     const rows = choreRows(specs, [{ uid: 'm', summary: 'Dante · Unload dishes · Morning', status: 'completed', due: '2026-09-27' }], ppl, '2026-09-27');
     expect(rows[1].after).toBe('Dante');
   });
-  it('laundry has no number and is never blocked; a missing predecessor blocks nothing', () => {
+  it('a missing predecessor blocks nothing', () => {
     const h = makeHass([{ entity_id: 'sensor.r', state: 'x', attributes: { assignments: { unload: 'Dante', garbage: 'June', laundry: 'Beth' }, morning_keys: ['unload', 'load', 'garbage'], evening_keys: ['unload', 'load', 'garbage'] } }]);
     const rows = choreRows(rosterChores(h, 'sensor.r', new Date('2026-09-27T08:00:00')), [], ppl, '2026-09-27');
-    expect(rows.map((r) => [r.key, r.num, r.after])).toEqual([['unload', 1, undefined], ['garbage', 3, undefined], ['laundry', undefined, undefined]]);
+    expect(rows.map((r) => [r.key, r.num, r.after])).toEqual([['unload', 1, undefined], ['garbage', 3, undefined]]);
   });
   it('falls back to raw to-do items without a roster', () => {
     const rows = choreRows(null, [{ uid: 'a', summary: 'June · Feed the cat', status: 'needs_action' }, { uid: 'b', summary: 'Water plants', status: 'completed' }, { uid: 'c', summary: 'Old', status: 'completed', due: '2026-09-20' }], ppl, '2026-09-27');

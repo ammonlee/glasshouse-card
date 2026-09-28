@@ -32,11 +32,12 @@ export function rosterChores(h: HassLike, rosterId: string | undefined, now: Dat
   const a = attr<Record<string, string>>(h, rosterId, 'assignments') || {};
   const am = attr<string[]>(h, rosterId, 'morning_keys'), pm = attr<string[]>(h, rosterId, 'evening_keys');
   const ses = session(now);
-  // Laundry runs all day: one item in both sessions, listed last (none on catch-up / rest days).
-  const keys = [...((ses === 'Morning' ? am : pm) || Object.keys(a)).filter((k) => k !== 'laundry'), 'laundry'];
+  // The four chart chores, in chart order, all day. Chores in both the morning and evening lists get one
+  // item per session; the rest (counters) are one item for the day. Laundry is left to the Laundry card.
+  const keys = Object.keys(ORDER);
   return keys.filter((k) => (a[k] || '').trim()).map((k) => {
     const who = a[k].trim(), label = SHORT[k] || k;
-    const twice = k !== 'laundry' && !!am?.includes(k) && !!pm?.includes(k);
+    const twice = !!am?.includes(k) && !!pm?.includes(k);
     const summary = `${who}${SEP}${label}${twice ? SEP + ses : ''}`;
     const old = `${who}${SEP}${LEGACY[k] || label}`;
     return { key: k, who, label, icon: ICONS[k] || 'check', summary, ...(old !== summary ? { legacy: old } : {}) };
