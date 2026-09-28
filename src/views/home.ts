@@ -30,7 +30,7 @@ export function laundryCard(m: Model, card: GlasshouseCard, full: boolean) {
   if (!l) return '';
   const chip = l.turn
     ? html`<div class="btn" style="height:40px;padding:0 14px 0 4px"><div class="initials" style="width:32px;height:32px;font-size:11px;box-shadow:inset 0 0 0 2px ${l.turn.color}">${l.turn.initials}</div><span style="font-size:13px">${l.turn.name}'s day</span></div>`
-    : html`<div class="btn" style="height:40px;padding:0 14px;font-size:13px;font-weight:500;color:var(--muted)">${icon('moon', 14)}${full ? l.note || 'Machines rest today' : 'Rest day'}</div>`;
+    : html`<div class="btn" style="height:40px;padding:0 14px;font-size:13px;font-weight:500;color:var(--muted)">${icon('moon', 14)}${full ? l.note || 'Machines rest today' : /catch/i.test(l.note || '') ? 'Catch-up day' : 'Rest day'}</div>`;
   const size = (hh: number) => (full ? `height:${hh}px` : 'flex:1;min-height:0');
   const washer = l.washer === 'done'
     ? html`<div class="chore-row done" style="${size(68)};padding:0 14px 0 8px" @click=${() => card.ackLaundry(l.doneSince)}>
