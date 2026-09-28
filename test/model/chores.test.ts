@@ -1,5 +1,5 @@
 import { makeHass } from '../helpers/hass';
-import { rosterChores, planSync, choreRows, dayString } from '../../src/model/chores';
+import { rosterChores, planSync, choreRows, dayString, isSeeded, SHORT } from '../../src/model/chores';
 import type { PersonVm } from '../../src/model/people';
 
 const roster = makeHass([{ entity_id: 'sensor.roster', state: 'Sunday', attributes: {
@@ -15,7 +15,7 @@ const ppl: PersonVm[] = [
 describe('rosterChores', () => {
   it('uses evening keys after noon and skips blanks', () => {
     const s = rosterChores(roster, 'sensor.roster', new Date('2026-09-27T18:00:00'))!;
-    expect(s.map((c) => c.summary)).toEqual(['Dante · Unload dishes', 'Beth · Load dishes', 'June · Take out trash', 'Ben · Clean appliances & countertops']);
+    expect(s.map((c) => c.summary)).toEqual(['Dante · Unload dishes', 'Beth · Load dishes', 'June · Garbage out', 'Ben · Counters & appliances']);
   });
   it('uses morning keys before noon', () => {
     expect(rosterChores(roster, 'sensor.roster', new Date('2026-09-27T08:00:00'))!.map((c) => c.key)).toEqual(['unload', 'load', 'garbage']);
@@ -23,11 +23,21 @@ describe('rosterChores', () => {
   it('returns null without a roster', () => { expect(rosterChores(roster, undefined, new Date())).toBeNull(); });
 });
 
+describe('chart labels', () => {
+  it('uses the paper chart wording', () => {
+    expect(SHORT).toEqual({ unload: 'Unload dishes', load: 'Load dishes', garbage: 'Garbage out', counters: 'Counters & appliances', laundry: 'Laundry' });
+  });
+  it('still recognizes the v0.1.0 labels as seeded', () => {
+    for (const l of ['Take out trash', 'Clean appliances & countertops', 'Garbage out', 'Counters & appliances', 'Unload dishes']) expect(isSeeded(`June · ${l}`)).toBe(true);
+    expect(isSeeded('June · Feed the cat')).toBe(false);
+  });
+});
+
 describe('planSync', () => {
   const specs = rosterChores(roster, 'sensor.roster', new Date('2026-09-27T18:00:00'))!;
   const done = { uid: '1', summary: 'Dante · Unload dishes', status: 'completed' as const, due: '2026-09-27' };
   it('adds only today\'s missing summaries', () => {
-    expect(planSync(specs, [done], '2026-09-27')).toEqual({ remove: [], add: ['Beth · Load dishes', 'June · Take out trash', 'Ben · Clean appliances & countertops'] });
+    expect(planSync(specs, [done], '2026-09-27')).toEqual({ remove: [], add: ['Beth · Load dishes', 'June · Garbage out', 'Ben · Counters & appliances'] });
   });
   it('removes yesterday\'s items and re-seeds today (Review Focus 3)', () => {
     expect(planSync(specs, [done], '2026-09-28')).toEqual({ remove: ['1'], add: specs.map((s) => s.summary) });
@@ -51,8 +61,8 @@ describe('planSync', () => {
   });
   it('removes same-day duplicates of a seeded chore, keeping one (completed first, then lowest uid)', () => {
     const d = (uid: string, summary: string, status: 'completed' | 'needs_action' = 'needs_action') => ({ uid, summary, status, due: '2026-09-27' });
-    const items = [d('b', 'Beth · Load dishes'), d('a', 'Beth · Load dishes'), d('z', 'Dante · Unload dishes'), d('y', 'Dante · Unload dishes', 'completed'), d('c', 'June · Take out trash')];
-    expect(planSync(specs, items, '2026-09-27')).toEqual({ remove: ['b', 'z'], add: ['Ben · Clean appliances & countertops'] });
+    const items = [d('b', 'Beth · Load dishes'), d('a', 'Beth · Load dishes'), d('z', 'Dante · Unload dishes'), d('y', 'Dante · Unload dishes', 'completed'), d('c', 'June · Garbage out')];
+    expect(planSync(specs, items, '2026-09-27')).toEqual({ remove: ['b', 'z'], add: ['Ben · Counters & appliances'] });
   });
 });
 

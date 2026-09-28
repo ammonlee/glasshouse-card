@@ -8,7 +8,9 @@ export interface SyncPlan { remove: string[]; add: string[] }
 export interface ChoreRow { key: string; initials: string; who: string; what: string; icon: string; color: string; done: boolean; uid?: string }
 
 export const SEP = ' · ';
-export const SHORT: Record<string, string> = { unload: 'Unload dishes', load: 'Load dishes', garbage: 'Take out trash', counters: 'Clean appliances & countertops', laundry: 'Laundry' };
+export const SHORT: Record<string, string> = { unload: 'Unload dishes', load: 'Load dishes', garbage: 'Garbage out', counters: 'Counters & appliances', laundry: 'Laundry' };
+/** The labels v0.1.0 seeded with, kept so its items are still recognized (cleaned up, never duplicated). */
+export const LEGACY: Record<string, string> = { unload: 'Unload dishes', load: 'Load dishes', garbage: 'Take out trash', counters: 'Clean appliances & countertops', laundry: 'Laundry' };
 export const ICONS: Record<string, string> = { unload: 'utensils', load: 'utensils-crossed', garbage: 'trash-2', counters: 'spray-can', laundry: 'washing-machine' };
 
 export const dayString = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -26,7 +28,7 @@ export function rosterChores(h: HassLike, rosterId: string | undefined, now: Dat
 const dueDay = (i: TodoItem) => (i.due ? i.due.slice(0, 10) : undefined);
 const isToday = (i: TodoItem, today: string) => !i.due || dueDay(i) === today;
 
-const LABELS = new Set(Object.values(SHORT));
+const LABELS = new Set([...Object.values(SHORT), ...Object.values(LEGACY)]);
 /** True for summaries in the format this card seeds from a roster: `<Name> · <one of the SHORT labels>`. */
 export function isSeeded(summary: string): boolean {
   const at = summary.lastIndexOf(SEP);

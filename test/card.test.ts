@@ -168,7 +168,7 @@ describe('<glasshouse-card>', () => {
     for (let i = 0; i < 10; i++) await new Promise((r) => setTimeout(r, 0));
     el.hass = { ...h };
     for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0));
-    expect(adds).toEqual(['June · Unload dishes', 'Beth · Load dishes', 'Ben · Take out trash']);
+    expect(adds).toEqual(['June · Unload dishes', 'Beth · Load dishes', 'Ben · Garbage out']);
     expect(items.length).toBe(3);
     document.body.removeChild(el);
   });
