@@ -10,14 +10,37 @@ export interface ZoneVm { entity: string; name: string; on: boolean }
 const objId = (id: string) => id.split('.')[1];
 const pct = (b: number | null) => (b == null ? '' : ` · ${Math.round(b)}%`);
 
+/** Roborock-style `sensor.<vacuum>_status` values, grouped. The vacuum entity itself can lag the robot by minutes
+ *  (it still reads "docked" while the dock washes the mop before a run), so the status sensor wins when present. */
+const STATUS_WORDS: Record<string, string> = {
+  starting: 'Starting', cleaning: 'Cleaning', spot_cleaning: 'Spot cleaning', zoned_cleaning: 'Cleaning zones', segment_cleaning: 'Cleaning rooms',
+  going_to_target: 'Heading out', washing_the_mop: 'Washing the mop', going_to_wash_the_mop: 'Going to wash the mop', emptying_the_bin: 'Emptying the bin',
+  mapping: 'Mapping', patrol: 'Patrolling', attaching_the_mop: 'Attaching the mop', detaching_the_mop: 'Detaching the mop', robot_status_mopping: 'Mopping',
+  clean_mop_cleaning: 'Vacuum & mop', clean_mop_mopping: 'Mopping', segment_mopping: 'Mopping rooms', segment_clean_mop_cleaning: 'Vacuum & mop rooms',
+  segment_clean_mop_mopping: 'Mopping rooms', zoned_mopping: 'Mopping zones', zoned_clean_mop_cleaning: 'Vacuum & mop zones', zoned_clean_mop_mopping: 'Mopping zones',
+  air_drying_stopping: 'Drying the mop', back_to_dock_washing_duster: 'Washing the duster', remote_control_active: 'Remote control', manual_mode: 'Manual mode',
+};
+/** Things the dock does with the robot parked; they only count as a run when the cleaning sensor is on. */
+const DOCK_CHORES = new Set(['emptying_the_bin', 'washing_the_mop', 'air_drying_stopping', 'back_to_dock_washing_duster']);
+const STATUS_STATE: Record<string, VacState> = {
+  returning_home: 'returning', docking: 'returning', paused: 'paused', error: 'stuck', charging_problem: 'stuck', locked: 'stuck', device_offline: 'offline',
+};
+
 export function vacuums(h: HassLike, ids: string[] = []): VacVm[] {
   return ids.map((id) => {
-    const s = val(h, id);
-    const state: VacState = !exists(h, id) ? 'offline' : ({ docked: 'docked', idle: 'docked', cleaning: 'cleaning', returning: 'returning', paused: 'paused', error: 'stuck' } as Record<string, VacState>)[s!] || 'docked';
-    const battery = attr<number>(h, id, 'battery_level') ?? num(h, `sensor.${objId(id)}_battery`);
+    const s = val(h, id), o = objId(id);
+    const status = exists(h, `sensor.${o}_status`) ? val(h, `sensor.${o}_status`)! : undefined;
+    const cleaningOn = val(h, `binary_sensor.${o}_cleaning`) === 'on';
+    let state: VacState = !exists(h, id) ? 'offline' : ({ docked: 'docked', idle: 'docked', cleaning: 'cleaning', returning: 'returning', paused: 'paused', error: 'stuck' } as Record<string, VacState>)[s!] || 'docked';
+    if (status && status !== 'unknown' && state !== 'offline') {
+      const out = cleaningOn || (status in STATUS_WORDS && !DOCK_CHORES.has(status));
+      state = STATUS_STATE[status] || (out ? 'cleaning' : 'docked');
+    }
+    const doing = status ? STATUS_WORDS[status] : undefined;
+    const battery = attr<number>(h, id, 'battery_level') ?? num(h, `sensor.${o}_battery`);
     const M: Record<VacState, Pick<VacVm, 'text' | 'action' | 'tone'>> = {
-      docked: { text: `Docked${pct(battery)}`, action: { label: 'Start', icon: 'play', service: 'start' }, tone: 'off' },
-      cleaning: { text: `Cleaning${pct(battery)}`, action: { label: 'Dock', icon: 'house', service: 'return_to_base' }, tone: 'on' },
+      docked: { text: doing && status !== 'cleaning' ? `Docked · ${doing}` : `Docked${pct(battery)}`, action: { label: 'Start', icon: 'play', service: 'start' }, tone: 'off' },
+      cleaning: { text: `${doing || 'Cleaning'}${pct(battery)}`, action: { label: 'Dock', icon: 'house', service: 'return_to_base' }, tone: 'on' },
       returning: { text: 'Returning to dock', action: { label: 'Start', icon: 'play', service: 'start' }, tone: 'on' },
       paused: { text: `Paused${pct(battery)}`, action: { label: 'Dock', icon: 'house', service: 'return_to_base' }, tone: 'on' },
       stuck: { text: 'Stuck — needs help', action: { label: 'Locate', icon: 'volume-2', service: 'locate' }, tone: 'alert' },

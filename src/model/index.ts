@@ -55,7 +55,7 @@ export function buildModel(h: HassLike, c: GlasshouseConfig, x: Extras, now: Dat
 export function relevantIds(h: HassLike, c: GlasshouseConfig): Set<string> {
   const ids = new Set(collectEntityIds(c));
   for (const r of c.rooms || []) { const d = discover(h, r); [...d.lights, ...d.fans, ...d.covers].forEach((i) => ids.add(i)); }
-  for (const v of [...(c.family?.vacuums || []), c.family?.mower].filter(Boolean) as string[]) ids.add(`sensor.${v.split('.')[1]}_battery`);
+  for (const v of [...(c.family?.vacuums || []), c.family?.mower].filter(Boolean) as string[]) { const o = v.split('.')[1]; ids.add(`sensor.${o}_battery`); ids.add(`sensor.${o}_status`); ids.add(`binary_sensor.${o}_cleaning`); }
   return ids;
 }
 
