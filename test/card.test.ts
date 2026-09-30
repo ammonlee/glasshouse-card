@@ -280,4 +280,21 @@ describe('<glasshouse-card>', () => {
     await el.toggleChore('a1', 'June · Unload dishes', false);   // optimistically flips to 'completed'
     expect((el as any)._x.todoItems[0].status).toBe('needs_action');
   });
+
+  it('throws confetti when the last chore is checked off, and not on load', async () => {
+    const el = await mount({ type: 'custom:glasshouse-card', home: { chores: { todo: 'todo.chores' } } });
+    el._itemsLoaded = true;
+    el._x.todoItems = [{ uid: 'a1', summary: 'June · Unload dishes', status: 'completed' }, { uid: 'a2', summary: 'Max · Garbage out', status: 'needs_action' }];
+    el._rev++; await el.updateComplete;
+    expect(el.shadowRoot!.querySelector('[data-test=confetti]')).toBeNull();
+    el._x.todoItems = el._x.todoItems.map((t: any) => ({ ...t, status: 'completed' }));
+    el._rev++; await el.updateComplete;
+    expect(el.shadowRoot!.querySelectorAll('[data-test=confetti] i').length).toBeGreaterThan(50);
+
+    const fresh = await mount({ type: 'custom:glasshouse-card', home: { chores: { todo: 'todo.chores' } } });
+    fresh._itemsLoaded = true;
+    fresh._x.todoItems = [{ uid: 'a1', summary: 'June · Unload dishes', status: 'completed' }];
+    fresh._rev++; await fresh.updateComplete;
+    expect(fresh.shadowRoot!.querySelector('[data-test=confetti]')).toBeNull();
+  });
 });

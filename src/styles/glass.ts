@@ -78,5 +78,11 @@ export const glass = css`
   .disconnected .view, .disconnected .rail { pointer-events: none; opacity: .6; }
   @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
   @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.98) } to { opacity: 1; transform: none } }
+  .confetti { position: absolute; inset: 0; z-index: 60; pointer-events: none; overflow: hidden; }
+  .confetti i { position: absolute; top: -24px; display: block; opacity: 0; animation-name: confetti-fall; animation-timing-function: cubic-bezier(.3,.1,.7,1); animation-fill-mode: forwards; }
+  .confetti-banner { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); padding: 22px 36px; font-size: 30px; font-weight: 600; letter-spacing: -.01em;
+    color: #fff; animation: confetti-banner 5.2s ease forwards; }
+  @keyframes confetti-fall { 0% { opacity: 1; transform: translate(0, 0) rotate(0) } 85% { opacity: 1 } 100% { opacity: 0; transform: translate(var(--dx), 860px) rotate(var(--rot)) } }
+  @keyframes confetti-banner { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.8) } 10% { opacity: 1; transform: translate(-50%, -50%) scale(1.04) } 16% { transform: translate(-50%, -50%) scale(1) } 80% { opacity: 1 } 100% { opacity: 0 } }
   @keyframes toast { from { opacity: 0; transform: translate(-50%, 8px) } to { opacity: 1; transform: translate(-50%, 0) } }
 `;

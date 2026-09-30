@@ -4,7 +4,8 @@ import type { HassLike } from './types';
 import type { GlasshouseConfig } from './config/types';
 import { validateConfig } from './config/schema';
 import { buildModel, relevantIds, changed, type Model, type Tab, type Extras } from './model/index';
-import { planSync, dayString, rosterChores } from './model/chores';
+import { planSync, dayString, rosterChores, session } from './model/chores';
+import { CelebrationGate } from './model/celebrate';
 import { calendars } from './model/calendar';
 import { Overrides } from './overrides';
 import { run, toggleCall, needsHold, alarmDisarmable, type Call } from './actions';
@@ -23,6 +24,7 @@ import { garageView } from './views/garage';
 import { familyView } from './views/family';
 import { overlayView } from './views/overlays';
 import { nightView } from './views/night';
+import { confettiView, makeConfetti, CONFETTI_MS, type Piece } from './views/confetti';
 import { attachHold } from './hold';
 import { stubConfig } from './config/stub';
 
@@ -55,6 +57,8 @@ export class GlasshouseCard extends LitElement {
   private _ring = new RingDetector();
   private _x: Extras = { todoItems: [], calendar: [], timeline: [], laundryAck: null };
   private _timers: number[] = [];
+  private _gate = new CelebrationGate();
+  private _confetti: Piece[] | null = null;
   private _scale = 1;
   private _cw = 1280;
   private _ch = 800;
@@ -328,6 +332,12 @@ export class GlasshouseCard extends LitElement {
   nav(t: Tab) { this._tab = t; this._overlay = null; }
   openOverlay(o: Overlay) { this._overlay = o; }
   closeOverlay() { this._overlay = null; }
+  /** Throws confetti over the whole dashboard, then clears it once the last piece has landed. */
+  private _celebrate() {
+    const pieces = makeConfetti();
+    this._confetti = pieces;
+    window.setTimeout(() => { if (this._confetti === pieces) { this._confetti = null; this._rev++; } }, CONFETTI_MS);
+  }
   showToast(msg: string) { this._toast = msg; window.setTimeout(() => { if (this._toast === msg) this._toast = null; }, 2600); }
   private _clearRingTimer() { if (this._ringTimer != null) { clearInterval(this._ringTimer); this._ringTimer = undefined; } }
   /** Opens the doorbell takeover. During night mode it renders above the night screen (the night helper
@@ -360,6 +370,8 @@ export class GlasshouseCard extends LitElement {
     const m: Model = buildModel(this.view, this._config, this._x, new Date());
     const tab = m.tabs.includes(this._tab) ? this._tab : 'home';
     const V = { home: homeView, security: securityView, rooms: roomsView, climate: climateView, garage: garageView, family: familyView }[tab];
+    const now = new Date(), done = m.chores.filter((c) => c.done).length;
+    if (this._itemsLoaded && !m.night && this._gate.check(`${dayString(now)}-${session(now)}`, m.chores.length, done)) this._celebrate();
     const cls = `frame ${this._config.blur === false ? 'noblur' : ''} ${this._hass!.connected ? '' : 'disconnected'}`;
     return html`<div class=${cls} style="width:${this._cw}px;height:${this._ch}px;transform:translate(-50%,-50%) scale(${this._scale})">
       <div class="wallpaper wp-${this._config.wallpaper || 'dusk'}"></div>
@@ -367,6 +379,7 @@ export class GlasshouseCard extends LitElement {
         <div style="display:contents">${this._overlay?.kind === 'doorbell' ? overlayView(this._overlay, m, this) : ''}</div>` : html`
         <div class="chrome">${header(m, this._hass!.connected, () => this.openOverlay({ kind: 'alerts' }), thermostatCapsule(m, this))}${rail(m.tabs, tab, (t) => this.nav(t))}${V(m, this)}</div>
         <div style="display:contents">${this._overlay ? overlayView(this._overlay, m, this) : ''}</div>`}
+      ${this._confetti ? confettiView(this._confetti) : ''}
       ${this._toast ? html`<div class="capsule toast">${icon('check', 16, 'color:#98E6CA')}${this._toast}</div>` : ''}
     </div>`;
   }
