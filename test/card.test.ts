@@ -309,6 +309,8 @@ describe('<glasshouse-card>', () => {
   });
 
   it('loads the chore log from HA, celebrates a 7-day streak, and saves the log', async () => {
+    const eve = new Date(); eve.setHours(19, 0, 0, 0);   // all-day chores count in the evening session
+    vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(eve);
     const d = (n: number) => { const x = new Date(); x.setDate(x.getDate() - n); return dayString(x); };
     const past: Record<string, Record<string, [number, number]>> = {};
     for (let n = 1; n <= 6; n++) past[`${d(n)}-Evening`] = { June: [1, 1] };
@@ -322,7 +324,7 @@ describe('<glasshouse-card>', () => {
     await el.updateComplete; await new Promise((r) => setTimeout(r, 0)); await el.updateComplete;
     expect(el._x.choreLog.s).toEqual(past);
 
-    vi.useFakeTimers();
+    vi.useRealTimers(); vi.useFakeTimers(); vi.setSystemTime(eve);
     try {
       el._itemsLoaded = true;
       el._x.todoItems = [{ uid: 'a1', summary: 'June · Laundry', status: 'needs_action' }];
