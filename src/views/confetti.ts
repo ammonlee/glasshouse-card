@@ -14,9 +14,9 @@ export function makeConfetti(n = 140, rnd = Math.random): Piece[] {
   });
 }
 
-export function confettiView(pieces: Piece[]) {
+export function confettiView(pieces: Piece[], text: string) {
   return html`<div class="confetti" data-test="confetti">
-    <div class="capsule confetti-banner">🎉 All chores done — great job!</div>
+    <div class="capsule confetti-banner">${text}</div>
     <div style="display:contents">${pieces.map((p) => html`<i style="left:${p.x}%;width:${p.w}px;height:${p.h}px;background:${p.color};border-radius:${p.round ? '50%' : '2px'};animation-delay:${p.delay}ms;animation-duration:${p.dur}ms;--dx:${p.drift}px;--rot:${p.spin}deg"></i>`)}</div>
   </div>`;
 }

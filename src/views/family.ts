@@ -6,6 +6,20 @@ import { choreList, laundryCard, rollCallButton, vacuumRows } from './home';
 
 const CIRC = 163.4;
 
+/** This week's chore tally (since Sunday), one column per person, leader first and crowned with the trophy. */
+function championCard(m: Model) {
+  const top = m.choreStats[0], lead = top.week > 0 && (m.choreStats[1]?.week ?? -1) < top.week;
+  return html`<div class="glass col" data-test="champion" style="gap:10px;flex:none">
+    <div class="row" style="justify-content:space-between;padding-left:4px"><div class="col" style="line-height:1.25"><span style="font-size:18px;font-weight:600">Chore Champion</span>
+      <span style="font-size:12px;color:var(--subtle)">${lead ? `${top.who} leads this week` : top.week ? "It's a tie this week" : 'Resets every Sunday'}</span></div>
+      ${icon('trophy', 20, `color:${lead ? '#FFD27A' : 'rgba(255,255,255,.6)'}`)}</div>
+    <div class="row" style="justify-content:space-around;align-items:flex-start">${m.choreStats.map((s, i) => html`<div class="col" data-test="champ-row" style="align-items:center;gap:3px;min-width:0;flex:1">
+      <div class="initials" style="width:40px;height:40px;font-size:13px;box-shadow:inset 0 0 0 2px ${s.color}${i === 0 && lead ? ',0 0 18px rgba(255,210,122,.75)' : ''};${i === 0 && lead ? 'background:rgba(255,210,122,.28)' : ''}">${s.initials}</div>
+      <span class="num" style="font-size:18px;font-weight:600;line-height:1.1">${s.week}</span>
+      ${s.streak >= 2 ? html`<span class="streak">${icon('flame', 12)}${s.streak}</span>` : html`<span style="height:20px"></span>`}</div>`)}</div>
+  </div>`;
+}
+
 export function familyView(m: Model, card: GlasshouseCard) {
   const f = card._config.family || {}, s = m.sprinklers, mw = m.mower, tub = m.hotTub;
   const hasChores = !!card._config.home?.chores;
@@ -24,10 +38,11 @@ export function familyView(m: Model, card: GlasshouseCard) {
       </div>` : ''}
     </div>
     <div class="col" style="min-height:0;gap:16px">
+      ${hasChores && m.choreStats.length ? championCard(m) : ''}
       ${f.laundry_card ? laundryCard(m, card, true) : ''}
       ${m.vacuums.length || m.printer.low ? html`<div class="glass col" style="flex:1;min-height:0;gap:8px">
         ${m.vacuums.length ? html`<span style="font-size:18px;font-weight:600;padding-left:4px">Robot vacuums</span>` : ''}
-        ${vacuumRows(m, card)}
+        ${vacuumRows(m, card, hasChores && m.choreStats.length > 0)}
         <div class="grow"></div>
         ${m.printer.low ? html`<div class="row" style="height:44px;border-radius:22px;padding:0 14px;gap:8px;font-size:13px;background:linear-gradient(160deg,rgba(255,176,60,.3),rgba(255,176,60,.1));border:1px solid rgba(255,200,120,.4);color:#FFE6C2">${icon('printer', 16)}${m.printer.low}</div>` : ''}
       </div>` : ''}

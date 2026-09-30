@@ -9,11 +9,13 @@ const rows = [
   row({ key: 'laundry', who: 'June', what: 'Laundry', done: true, summary: 'June · Laundry' }),
 ];
 
+const stats = [{ who: 'Dante', initials: 'DA', color: '#fff', streak: 5, week: 9 }, { who: 'Beth', initials: 'BE', color: '#fff', streak: 1, week: 4 }];
+
 function mount() {
   const calls: unknown[][] = [];
   const card = { toggleChore: (...a: unknown[]) => { calls.push(a); } } as any;
   const div = document.createElement('div');
-  render(choreList({ chores: rows } as any, card, 66, ''), div);
+  render(choreList({ chores: rows, choreStats: stats } as any, card, 66, ''), div);
   return { div, calls, rs: [...div.querySelectorAll('.chore-row')] as HTMLElement[] };
 }
 
@@ -36,5 +38,10 @@ describe('chore list ordering', () => {
     const { rs, calls } = mount();
     rs[1].click();
     expect(calls).toEqual([[undefined, 'Beth · Load dishes · Evening', false]]);
+  });
+  it('shows a flame streak from 2 days up', () => {
+    const { rs } = mount();
+    expect(rs[0].querySelector('[data-test=streak]')?.textContent?.trim()).toBe('5');
+    expect(rs[1].querySelector('[data-test=streak]')).toBeNull();
   });
 });

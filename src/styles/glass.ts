@@ -78,6 +78,8 @@ export const glass = css`
   .disconnected .view, .disconnected .rail { pointer-events: none; opacity: .6; }
   @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
   @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.98) } to { opacity: 1; transform: none } }
+  .streak { display: inline-flex; align-items: center; gap: 2px; height: 20px; padding: 0 7px 0 5px; border-radius: 10px; font-size: 12px; font-weight: 700;
+    color: #FFD27A; background: rgba(255,160,60,.18); box-shadow: inset 0 0 0 1px rgba(255,190,110,.35); flex: none; }
   .confetti { position: absolute; inset: 0; z-index: 60; pointer-events: none; overflow: hidden; }
   .confetti i { position: absolute; top: -24px; display: block; opacity: 0; animation-name: confetti-fall; animation-timing-function: cubic-bezier(.3,.1,.7,1); animation-fill-mode: forwards; }
   .confetti-banner { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); padding: 22px 36px; font-size: 30px; font-weight: 600; letter-spacing: -.01em;

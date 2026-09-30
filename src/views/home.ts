@@ -43,6 +43,12 @@ export function rollCallButton(card: GlasshouseCard, withLabel: boolean) {
     : html`<div class="btn circle" data-test="roll-call" title="Roll call" @click=${run}>${icon('megaphone')}</div>`;
 }
 
+/** A small flame with the person's day streak, once it's worth bragging about (2+ days). */
+export function streakChip(m: Model, who: string) {
+  const n = m.choreStats.find((s) => s.who === who)?.streak || 0;
+  return n >= 2 ? html`<span class="streak" data-test="streak" title="${n} days in a row">${icon('flame', 13)}${n}</span>` : '';
+}
+
 export function choreList(m: Model, card: GlasshouseCard, rowH: number | null, trailing: unknown) {
   const done = m.chores.filter((c) => c.done).length, all = m.chores.length > 0 && done === m.chores.length;
   return html`
@@ -55,7 +61,7 @@ export function choreList(m: Model, card: GlasshouseCard, rowH: number | null, t
       <div class="chore-row ${c.done ? 'done' : ''} ${c.after ? 'blocked' : ''}" style="${rowH ? `height:${rowH}px;` : 'flex:1;min-height:0;'}padding:0 6px 0 8px"
         @click=${() => card.toggleChore(c.uid, c.summary ?? `${c.who} · ${c.what}`, c.done)}>
         <div class="initials" style="box-shadow:inset 0 0 0 2px ${c.color}">${c.initials}</div>
-        <div class="col grow" style="line-height:1.3"><span class="row" style="gap:6px;font-size:16px;font-weight:600">${c.num ? html`<span class="chore-num">${c.num}</span>` : ''}<span class="ellip">${c.who}</span></span>
+        <div class="col grow" style="line-height:1.3"><span class="row" style="gap:6px;font-size:16px;font-weight:600">${c.num ? html`<span class="chore-num">${c.num}</span>` : ''}<span class="ellip">${c.who}</span>${streakChip(m, c.who)}</span>
           <span class="row" style="font-size:13px;gap:5px;color:${c.done ? '#BFF0DD' : 'rgba(255,255,255,.72)'}">${icon(c.icon, 14)}<span class="ellip">${c.after ? `After ${c.after}` : c.what}</span></span></div>
         <div class="check ${c.done ? 'done' : ''}" style="width:56px;height:56px">${icon('check', 22)}</div>
       </div>`)}</div>`;

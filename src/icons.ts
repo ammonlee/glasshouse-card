@@ -7,7 +7,7 @@ import {
   Heater, House, Lamp, LampCeiling, Lightbulb, Lock, LockOpen, Maximize2, Megaphone, Mic, Minus, Monitor, Moon, MoonStar,
   Package, PartyPopper, Pause, PersonStanding, Play, Plug, PlugZap, Plus, Power, Printer, Settings2, Shield, ShieldAlert,
   ShieldCheck, Siren, SkipBack, SkipForward, Sofa, Speaker, SprayCan, Sprout, Sun, Thermometer, Tractor, Trash2, Trees,
-  TriangleAlert, User, UserX, Users, UtensilsCrossed, Utensils, UtilityPole, Volume1, Volume2, Warehouse, WashingMachine,
+  TriangleAlert, Trophy, User, UserX, Users, UtensilsCrossed, Utensils, UtilityPole, Volume1, Volume2, Warehouse, WashingMachine,
   Waves, WifiOff, Wind, X, Zap,
 } from 'lucide';
 
@@ -18,7 +18,7 @@ const REG: Record<string, Node> = {
   car: Car, 'car-front': CarFront, check: Check, circle: Circle, clapperboard: Clapperboard, cloud: Cloud, 'cloud-fog': CloudFog,
   'cloud-hail': CloudHail, 'cloud-lightning': CloudLightning, 'cloud-moon': CloudMoon, 'cloud-rain': CloudRain, 'cloud-rain-wind': CloudRainWind,
   'cloud-snow': CloudSnow, 'cloud-sun': CloudSun, dog: Dog, 'door-closed': DoorClosed, 'door-open': DoorOpen, droplet: Droplet, droplets: Droplets,
-  eye: Eye, 'eye-off': EyeOff, fan: Fan, fingerprint: Fingerprint, flame: Flame, footprints: Footprints, hand: Hand, heater: Heater,
+  eye: Eye, 'eye-off': EyeOff, fan: Fan, fingerprint: Fingerprint, flame: Flame, trophy: Trophy, footprints: Footprints, hand: Hand, heater: Heater,
   house: House, lamp: Lamp, 'lamp-ceiling': LampCeiling, lightbulb: Lightbulb, lock: Lock, 'lock-open': LockOpen, 'maximize-2': Maximize2,
   megaphone: Megaphone, mic: Mic, minus: Minus, monitor: Monitor, moon: Moon, 'moon-star': MoonStar, package: Package, 'party-popper': PartyPopper,
   pause: Pause, 'person-standing': PersonStanding, play: Play, plug: Plug, 'plug-zap': PlugZap, plus: Plus, power: Power, printer: Printer,

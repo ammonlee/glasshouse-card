@@ -1,6 +1,6 @@
 import '../src/glasshouse-card';
 import { miniHouse } from './helpers/hass';
-import { session } from '../src/model/chores';
+import { session, dayString } from '../src/model/chores';
 
 async function mount(config: any) {
   const el = document.createElement('glasshouse-card') as any;
@@ -306,5 +306,34 @@ describe('<glasshouse-card>', () => {
     (el.shadowRoot!.querySelector('[data-test=celebrate]') as HTMLElement).click();
     await el.updateComplete;
     expect(el.shadowRoot!.querySelector('[data-test=confetti]')).not.toBeNull();
+  });
+
+  it('loads the chore log from HA, celebrates a 7-day streak, and saves the log', async () => {
+    const d = (n: number) => { const x = new Date(); x.setDate(x.getDate() - n); return dayString(x); };
+    const past: Record<string, Record<string, [number, number]>> = {};
+    for (let n = 1; n <= 6; n++) past[`${d(n)}-Evening`] = { June: [1, 1] };
+    const sent: any[] = [];
+    const h = miniHouse() as any;
+    h.callWS = async (msg: any) => { sent.push(msg); return msg.type === 'frontend/get_user_data' ? { value: { v: 1, s: past } } : {}; };
+    const el = document.createElement('glasshouse-card') as any;
+    el.setConfig({ type: 'custom:glasshouse-card', home: { chores: { todo: 'todo.chores' } } });
+    el.hass = h;
+    document.body.appendChild(el);
+    await el.updateComplete; await new Promise((r) => setTimeout(r, 0)); await el.updateComplete;
+    expect(el._x.choreLog.s).toEqual(past);
+
+    vi.useFakeTimers();
+    try {
+      el._itemsLoaded = true;
+      el._x.todoItems = [{ uid: 'a1', summary: 'June · Laundry', status: 'needs_action' }];
+      el._rev++; await el.updateComplete;
+      el._x.todoItems = [{ uid: 'a1', summary: 'June · Laundry', status: 'completed' }];
+      el._rev++; await el.updateComplete;
+      expect(el.shadowRoot!.querySelector('.confetti-banner')?.textContent).toContain('June hit a 7-day streak');
+      vi.advanceTimersByTime(3100);
+    } finally { vi.useRealTimers(); }
+    const save = sent.filter((m) => m.type === 'frontend/set_user_data').at(-1);
+    expect(save.key).toBe('glasshouse_chore_log');
+    expect(Object.keys(save.value.s)).toHaveLength(7);
   });
 });

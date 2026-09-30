@@ -6,6 +6,7 @@ import { validateConfig } from './config/schema';
 import { buildModel, relevantIds, changed, type Model, type Tab, type Extras } from './model/index';
 import { planSync, dayString, rosterChores, session } from './model/chores';
 import { CelebrationGate } from './model/celebrate';
+import { LOG_KEY, milestone, type ChoreLog } from './model/streaks';
 import { calendars } from './model/calendar';
 import { Overrides } from './overrides';
 import { run, toggleCall, needsHold, alarmDisarmable, type Call } from './actions';
@@ -58,7 +59,9 @@ export class GlasshouseCard extends LitElement {
   private _x: Extras = { todoItems: [], calendar: [], timeline: [], laundryAck: null };
   private _timers: number[] = [];
   private _gate = new CelebrationGate();
-  private _confetti: Piece[] | null = null;
+  private _confetti: { pieces: Piece[]; text: string } | null = null;
+  private _announced = new Set<string>();
+  private _logSave?: number;
   private _scale = 1;
   private _cw = 1280;
   private _ch = 800;
@@ -187,6 +190,11 @@ export class GlasshouseCard extends LitElement {
       else this._maybeSyncChores();
       this._rev++;
     });
+    if (todo || c.home?.chores?.roster) h.callWS<{ value?: ChoreLog }>({ type: 'frontend/get_user_data', key: LOG_KEY }).then((r) => {
+      if (gen !== this._gen) return;
+      this._x.choreLog = r?.value?.v === 1 && r.value.s ? r.value : { v: 1, s: {} };
+      this._rev++;
+    }).catch((e) => console.warn('glasshouse chore log', e));
     const refresh = () => this._refreshCalendars();
     refresh();
     this._subTimers.push(window.setInterval(refresh, 10 * 60_000));
@@ -207,6 +215,8 @@ export class GlasshouseCard extends LitElement {
     this._recheck = false;
     this._syncTok++;
     this._syncFailKey = null;
+    if (this._logSave != null) { clearTimeout(this._logSave); this._logSave = undefined; }
+    this._x.choreLog = undefined;
   }
 
   private async _events(entity: string, start: Date, end: Date) {
@@ -335,10 +345,19 @@ export class GlasshouseCard extends LitElement {
   /** Replays the celebration on demand (the party-popper button). */
   celebrate() { this._throwConfetti(); this._rev++; }
   /** Throws confetti over the whole dashboard, then clears it once the last piece has landed. */
-  private _throwConfetti() {
-    const pieces = makeConfetti();
-    this._confetti = pieces;
-    window.setTimeout(() => { if (this._confetti === pieces) { this._confetti = null; this._rev++; } }, CONFETTI_MS);
+  private _throwConfetti(text = '🎉 All chores done — great job!', n?: number) {
+    const c = { pieces: makeConfetti(n), text };
+    this._confetti = c;
+    window.setTimeout(() => { if (this._confetti === c) { this._confetti = null; this._rev++; } }, CONFETTI_MS);
+  }
+  /** Saves the chore log to Home Assistant a few seconds after the last change (checks come in bursts). */
+  private _saveLog() {
+    if (this._logSave != null) clearTimeout(this._logSave);
+    this._logSave = window.setTimeout(() => {
+      this._logSave = undefined;
+      const value = this._x.choreLog;
+      if (value && this._hass) this._hass.callWS({ type: 'frontend/set_user_data', key: LOG_KEY, value }).catch((e) => console.warn('glasshouse chore log save', e));
+    }, 3000);
   }
   showToast(msg: string) { this._toast = msg; window.setTimeout(() => { if (this._toast === msg) this._toast = null; }, 2600); }
   private _clearRingTimer() { if (this._ringTimer != null) { clearInterval(this._ringTimer); this._ringTimer = undefined; } }
@@ -373,7 +392,12 @@ export class GlasshouseCard extends LitElement {
     const tab = m.tabs.includes(this._tab) ? this._tab : 'home';
     const V = { home: homeView, security: securityView, rooms: roomsView, climate: climateView, garage: garageView, family: familyView }[tab];
     const now = new Date(), done = m.chores.filter((c) => c.done).length;
-    if (this._itemsLoaded && !m.night && this._gate.check(`${dayString(now)}-${session(now)}`, m.chores.length, done)) this._throwConfetti();
+    if (this._itemsLoaded && m.choreLog && m.choreLog !== this._x.choreLog) { this._x.choreLog = m.choreLog; this._saveLog(); }
+    if (this._itemsLoaded && !m.night && this._gate.check(`${dayString(now)}-${session(now)}`, m.chores.length, done)) {
+      const hit = m.choreStats.filter((st) => milestone(st.streak) && !this._announced.has(`${st.who}-${st.streak}`));
+      hit.forEach((st) => this._announced.add(`${st.who}-${st.streak}`));
+      this._throwConfetti(hit.length ? `🔥 ${hit.map((st) => st.who).join(' & ')} hit a ${hit[0].streak}-day streak!` : undefined, hit.length ? 280 : undefined);
+    }
     const cls = `frame ${this._config.blur === false ? 'noblur' : ''} ${this._hass!.connected ? '' : 'disconnected'}`;
     return html`<div class=${cls} style="width:${this._cw}px;height:${this._ch}px;transform:translate(-50%,-50%) scale(${this._scale})">
       <div class="wallpaper wp-${this._config.wallpaper || 'dusk'}"></div>
@@ -381,7 +405,7 @@ export class GlasshouseCard extends LitElement {
         <div style="display:contents">${this._overlay?.kind === 'doorbell' ? overlayView(this._overlay, m, this) : ''}</div>` : html`
         <div class="chrome">${header(m, this._hass!.connected, () => this.openOverlay({ kind: 'alerts' }), thermostatCapsule(m, this))}${rail(m.tabs, tab, (t) => this.nav(t))}${V(m, this)}</div>
         <div style="display:contents">${this._overlay ? overlayView(this._overlay, m, this) : ''}</div>`}
-      ${this._confetti ? confettiView(this._confetti) : ''}
+      ${this._confetti ? confettiView(this._confetti.pieces, this._confetti.text) : ''}
       ${this._toast ? html`<div class="capsule toast">${icon('check', 16, 'color:#98E6CA')}${this._toast}</div>` : ''}
     </div>`;
   }

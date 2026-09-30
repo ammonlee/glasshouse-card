@@ -5,7 +5,9 @@ import { computeAlerts, capsule, type ActiveAlert, type Capsule } from './alerts
 import { people, type PersonVm } from './people';
 import { weather, type WeatherVm } from './weather';
 import { upNext, timeline, type CalEvent, type UpNextRow, type FeedRow } from './calendar';
-import { rosterChores, choreRows, dayString, type ChoreRow, type TodoItem } from './chores';
+import { rosterChores, choreRows, dayString, session, type ChoreRow, type TodoItem } from './chores';
+import { recordSession, streaks, weekCounts, type ChoreLog } from './streaks';
+import { matchPerson } from './people';
 import { rooms, discover, type RoomVm } from './rooms';
 import { thermostat, climRooms, toggles, airVm, type ThermostatVm, type ClimRoomVm, type ToggleVm } from './climate';
 import { laundry, type LaundryVm } from './laundry';
@@ -14,13 +16,29 @@ import { cars, energy, type CarVm, type EnergyVm } from './garage';
 import { val } from './util';
 
 export type Tab = 'home' | 'security' | 'rooms' | 'climate' | 'garage' | 'family';
-export interface Extras { forecast?: Array<{ temperature: number; templow?: number }>; todoItems: TodoItem[]; calendar: CalEvent[]; timeline: CalEvent[]; laundryAck: string | null }
+export interface Extras { forecast?: Array<{ temperature: number; templow?: number }>; todoItems: TodoItem[]; calendar: CalEvent[]; timeline: CalEvent[]; laundryAck: string | null; choreLog?: ChoreLog }
 export interface Model {
   now: Date; alerts: ActiveAlert[]; capsule: Capsule; people: PersonVm[]; weather: WeatherVm | null; chores: ChoreRow[];
   upNext: UpNextRow[]; feed: FeedRow[]; rooms: RoomVm[]; thermostat: ThermostatVm | null; climRooms: ClimRoomVm[]; toggles: ToggleVm[];
   air: ReturnType<typeof airVm>; laundry: LaundryVm | null; cars: CarVm[]; energy: EnergyVm | null; vacuums: VacVm[]; mower: MowerVm | null;
   sprinklers: ReturnType<typeof sprinklers>; printer: ReturnType<typeof printer>; brushing: ReturnType<typeof brushing>; hotTub: ReturnType<typeof hotTub>;
   night: boolean; tabs: Tab[]; missing: Map<string, string>;
+  /** The chore log with this session recorded (null until it has loaded from Home Assistant). */
+  choreLog: ChoreLog | null;
+  /** Per person: day streak and chores done this week, champion first. Empty until the log has loaded. */
+  choreStats: ChoreStat[];
+}
+export interface ChoreStat { who: string; initials: string; color: string; streak: number; week: number }
+
+/** Records today's rows into the loaded log and ranks everyone who has chores this week or today. */
+function choreStats(log: ChoreLog | null, rows: ChoreRow[], ppl: PersonVm[], now: Date): ChoreStat[] {
+  if (!log) return [];
+  const today = dayString(now), st = streaks(log, today, `${today}-${session(now)}`), wk = weekCounts(log, today);
+  const names = [...new Set([...rows.map((r) => r.who), ...Object.keys(wk)])];
+  return names.map((n) => {
+    const r = rows.find((x) => x.who === n), p = matchPerson(ppl, n);
+    return { who: n, initials: r?.initials || p?.initials || n.slice(0, 2).toUpperCase(), color: r?.color || p?.color || 'rgba(255,255,255,.5)', streak: st[n] || 0, week: wk[n] || 0 };
+  }).sort((a, b) => b.week - a.week || b.streak - a.streak || a.who.localeCompare(b.who));
 }
 
 export function buildModel(h: HassLike, c: GlasshouseConfig, x: Extras, now: Date): Model {
@@ -35,10 +53,12 @@ export function buildModel(h: HassLike, c: GlasshouseConfig, x: Extras, now: Dat
   if (c.home?.thermostat || c.climate?.rooms?.length) tabs.push('climate');
   if (c.garage?.cars?.length || c.garage?.energy) tabs.push('garage');
   if (f.vacuums?.length || f.mower || f.sprinklers?.zones?.length || f.printer?.length || f.hot_tub || f.laundry_card || (c.people || []).some((p) => p.toothbrush)) tabs.push('family');
+  const chores = c.home?.chores?.todo || specs ? choreRows(specs, x.todoItems, ppl, dayString(now)) : [];
+  const choreLog = x.choreLog && chores.length ? recordSession(x.choreLog, dayString(now), session(now), chores) : x.choreLog || null;
   return {
     now, alerts, capsule: capsule(alerts, c.alerts?.secure_label), people: ppl,
     weather: weather(h, c.weather, x.forecast),
-    chores: c.home?.chores?.todo || specs ? choreRows(specs, x.todoItems, ppl, dayString(now)) : [],
+    chores, choreLog, choreStats: choreStats(choreLog, chores, ppl, now),
     upNext: c.home?.calendar ? upNext(x.calendar, now) : [], feed: timeline(x.timeline),
     rooms: rooms(h, c.rooms, new Set(alerts.map((a) => a.entity))),
     thermostat: thermostat(h, c.home?.thermostat), climRooms: climRooms(h, c.climate?.rooms), toggles: toggles(h, c.climate?.toggles),
