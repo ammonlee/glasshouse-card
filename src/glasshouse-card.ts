@@ -332,8 +332,10 @@ export class GlasshouseCard extends LitElement {
   nav(t: Tab) { this._tab = t; this._overlay = null; }
   openOverlay(o: Overlay) { this._overlay = o; }
   closeOverlay() { this._overlay = null; }
+  /** Replays the celebration on demand (the party-popper button). */
+  celebrate() { this._throwConfetti(); this._rev++; }
   /** Throws confetti over the whole dashboard, then clears it once the last piece has landed. */
-  private _celebrate() {
+  private _throwConfetti() {
     const pieces = makeConfetti();
     this._confetti = pieces;
     window.setTimeout(() => { if (this._confetti === pieces) { this._confetti = null; this._rev++; } }, CONFETTI_MS);
@@ -371,7 +373,7 @@ export class GlasshouseCard extends LitElement {
     const tab = m.tabs.includes(this._tab) ? this._tab : 'home';
     const V = { home: homeView, security: securityView, rooms: roomsView, climate: climateView, garage: garageView, family: familyView }[tab];
     const now = new Date(), done = m.chores.filter((c) => c.done).length;
-    if (this._itemsLoaded && !m.night && this._gate.check(`${dayString(now)}-${session(now)}`, m.chores.length, done)) this._celebrate();
+    if (this._itemsLoaded && !m.night && this._gate.check(`${dayString(now)}-${session(now)}`, m.chores.length, done)) this._throwConfetti();
     const cls = `frame ${this._config.blur === false ? 'noblur' : ''} ${this._hass!.connected ? '' : 'disconnected'}`;
     return html`<div class=${cls} style="width:${this._cw}px;height:${this._ch}px;transform:translate(-50%,-50%) scale(${this._scale})">
       <div class="wallpaper wp-${this._config.wallpaper || 'dusk'}"></div>

@@ -297,4 +297,14 @@ describe('<glasshouse-card>', () => {
     fresh._rev++; await fresh.updateComplete;
     expect(fresh.shadowRoot!.querySelector('[data-test=confetti]')).toBeNull();
   });
+
+  it('replays the confetti when the party popper is tapped', async () => {
+    const el = await mount({ type: 'custom:glasshouse-card', home: { chores: { todo: 'todo.chores' } } });
+    el._x.todoItems = [{ uid: 'a1', summary: 'June · Unload dishes', status: 'completed' }];
+    el._rev++; await el.updateComplete;
+    expect(el.shadowRoot!.querySelector('[data-test=confetti]')).toBeNull();
+    (el.shadowRoot!.querySelector('[data-test=celebrate]') as HTMLElement).click();
+    await el.updateComplete;
+    expect(el.shadowRoot!.querySelector('[data-test=confetti]')).not.toBeNull();
+  });
 });

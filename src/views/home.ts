@@ -49,7 +49,7 @@ export function choreList(m: Model, card: GlasshouseCard, rowH: number | null, t
     <div class="row" style="height:48px;gap:10px;padding-left:4px">
       <div class="col grow" style="line-height:1.25"><span class="card-title">Chores</span>
         <span style="font-size:13px;color:${all ? '#98E6CA' : 'rgba(255,255,255,.7)'}">${all ? 'All done — nice work!' : m.chores.length ? `${done} of ${m.chores.length} done` : 'Nothing today'}</span></div>
-      ${all ? html`<div class="btn circle" style="background:#19BE82;color:#07121A;box-shadow:0 0 24px rgba(25,190,130,.7),inset 0 1px 0 rgba(255,255,255,.45)">${icon('party-popper', 20)}</div>` : trailing}
+      ${all ? html`<div class="btn circle" data-test="celebrate" title="Celebrate" @click=${() => card.celebrate()} style="background:#19BE82;color:#07121A;box-shadow:0 0 24px rgba(25,190,130,.7),inset 0 1px 0 rgba(255,255,255,.45)">${icon('party-popper', 20)}</div>` : trailing}
     </div>
     <div style="display:contents">${m.chores.map((c) => html`
       <div class="chore-row ${c.done ? 'done' : ''} ${c.after ? 'blocked' : ''}" style="${rowH ? `height:${rowH}px;` : 'flex:1;min-height:0;'}padding:0 6px 0 8px"
